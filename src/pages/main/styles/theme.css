@@ -1,0 +1,183 @@
+.theme-skyblue .baseAdd.addTask .baseAdd-icon svg {
+    fill: #1c76c5;
+}
+
+.theme-skyblue .listTitle {
+    color: #228be8;
+}
+
+.theme-skyblue .checkBox .svgIcon svg {
+    fill: #228be8;
+}
+
+.listItem-container .listItem.color-skyblue .listItem-icon path {
+    fill: #228be8;
+}
+
+.listItem-container.active .color-skyblue span {
+    color: #136dbd;
+}
+
+.theme-skyblue .tasksToolbar-actionsItem {
+    color: #228be8;
+}
+
+.theme-skyblue .tasksToolbar-actionsItem path {
+    fill: #228be8;
+}
+
+.theme-skyblue .importanceButton path {
+    fill: #228be8;
+}
+
+.theme-skyblue #baseAddInput-addTask::placeholder {
+    color: #1c76c5;
+}
+
+
+.theme-blue .baseAdd.addTask .baseAdd-icon svg {
+    fill: #3459c1;
+}
+
+.theme-blue .listTitle {
+    color: #3e69e4;
+}
+
+.theme-blue .checkBox .svgIcon svg {
+    fill: #3e69e4;
+}
+
+.listItem-container .listItem.color-blue .listItem-icon path {
+    fill: #3e69e4;
+}
+
+.listItem-container.active .color-blue span {
+    color: #2e5cdb;
+}
+
+.theme-blue .tasksToolbar-actionsItem {
+    color: #3e69e4;
+}
+
+.theme-blue .tasksToolbar-actionsItem path {
+    fill: #3e69e4;
+}
+
+.theme-blue .importanceButton path {
+    fill: #3e69e4;
+}
+
+.theme-blue #baseAddInput-addTask::placeholder {
+    color: #3459c1;
+}
+
+
+.theme-green .baseAdd.addTask .baseAdd-icon svg {
+    fill: #4e8c26;
+}
+
+.theme-green .listTitle {
+    color: #5ca52d;
+}
+
+.theme-green .checkBox .svgIcon svg {
+    fill: #5ca52d;
+}
+
+.listItem-container .listItem.color-green .listItem-icon path {
+    fill: #5ca52d;
+}
+
+.listItem-container.active .color-green span {
+    color: #3b7a14;
+}
+
+.theme-green .tasksToolbar-actionsItem {
+    color: #5ca52d;
+}
+
+.theme-green .tasksToolbar-actionsItem path {
+    fill: #5ca52d;
+}
+
+.theme-green .importanceButton path {
+    fill: #5ca52d;
+}
+
+.theme-green #baseAddInput-addTask::placeholder {
+    color: #4e8c26;
+}
+
+
+.theme-red .baseAdd.addTask .baseAdd-icon svg {
+    fill: #b24642;
+}
+
+.theme-red .listTitle {
+    color: #d2534e;
+}
+
+.theme-red .checkBox .svgIcon svg {
+    fill: #d2534e;
+}
+
+.listItem-container .listItem.color-red .listItem-icon path {
+    fill: #d2534e;
+}
+
+.listItem-container.active .color-red span {
+    color: #c23732;
+}
+
+.theme-red .tasksToolbar-actionsItem {
+    color: #d2534e;
+}
+
+.theme-red .tasksToolbar-actionsItem path {
+    fill: #d2534e;
+}
+
+.theme-red .importanceButton path {
+    fill: #d2534e;
+}
+
+.theme-red #baseAddInput-addTask::placeholder {
+    color: #b24642;
+}
+
+
+.theme-purple .baseAdd.addTask .baseAdd-icon .icon {
+    color: #673aa2;
+}
+
+.theme-purple .listTitle {
+    color: #673aa2;
+}
+
+.theme-purple .checkBox .svgIcon svg {
+    fill: #7a45bf;
+}
+
+.listItem-container .listItem.color-purple .listItem-icon path {
+    fill: #7a45bf;
+}
+
+.listItem-container.active .color-purple span {
+    color: #7943bf;
+}
+
+.theme-purple .tasksToolbar-actionsItem {
+    color: #7a45bf;
+}
+
+.theme-purple .tasksToolbar-actionsItem path {
+    fill: #7a45bf;
+}
+
+.theme-purple .importanceButton path {
+    fill: #7a45bf;
+}
+
+.theme-purple #baseAddInput-addTask::placeholder {
+    color: #673aa2;
+}

@@ -1,0 +1,190 @@
+.banner {
+    background: linear-gradient(to bottom,#005799 0,#0076d1);
+    box-shadow: 0 12px 45px -8px rgba(0,120,215,.35);
+    padding: 30px 100px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.banner .title {
+    font-size: 35px;
+    font-weight: 900;
+    color: white;
+    width: 50%;
+}
+
+.banner .options {
+    width: 50%;
+}
+
+.options .option-item {
+    color: white;
+}
+
+.option-item .option {
+    margin-top: 3px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: 800;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.option-item .option:hover {
+    text-decoration: underline;
+}
+
+.profile-main {
+    padding: 20px 100px;
+}
+
+.profile-main .navigation {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.navigation .item {
+    position: relative;
+    font-size: 15px;
+    cursor: pointer;
+    margin-right: 35px;
+    padding: 10px 0;
+    color: grey;
+}
+
+.navigation .item:hover {
+    color: black;
+}
+
+.navigation .item.active:after {
+    position: absolute;
+    bottom: 2px;
+    left: 0px;
+    right: 0px;
+    content: '';
+    border-bottom: 2px solid #0067b8;
+}
+
+.profile-main .info-navi1 {
+    padding-top: 30px;
+    display: flex;
+    flex-direction: row;
+}
+
+.info-navi1 .avatar {
+    height: 200px;
+    width: 200px;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 45px;
+    font-weight: 700;
+}
+
+.info-navi1 .info {
+    padding-left: 80px;
+    width: 75%;
+}
+
+.info .info-header {
+    background: transparent;
+    font-size: 45px;
+    font-weight: 600;
+    color: black;
+    margin: 5px 0;
+}
+
+.info-header .username-input {
+    border: 3px solid black;
+    padding: 0 10px;
+}
+
+.info-header .header-buttom {
+    display: flex;
+    flex-direction: row;
+    margin-top: 5px;
+}
+
+.header-buttom .header-buttom-save {
+    width: fit-content;
+    padding: 5px 30px;
+    background-color: #0067b8;
+    border-color: #0067b8;
+    border-width: 2px;
+    border-style: solid;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.header-buttom .header-buttom-save:hover {
+    border-color: black;
+    text-decoration: underline;
+}
+
+.header-buttom .header-buttom-cancel {
+    width: fit-content;
+    padding: 5px 30px;
+    background-color: #e4e4e4;
+    border-color: #e4e4e4;
+    border-width: 2px;
+    border-style: solid;
+    font-size: 16px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.header-buttom .header-buttom-cancel:hover {
+    border-color: rgba(0,0,0,0.4);
+    text-decoration: underline;
+}
+
+.info .header-edit {
+    color: #0067b8;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.info .header-edit:hover {
+    text-decoration: underline;
+}
+
+.info .user-meta {
+    padding: 45px 0;
+
+}
+
+.user-meta .meta-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 15px 0;
+}
+
+.meta-item .metaItem-text {
+    width: 50%;
+    margin-left: 30px;
+    font-size: 18px;
+}
+
+.meta-item .metaItem-option {
+    width: 40%;
+    margin-left: auto;
+    font-size: 15px;
+    color: #0067b8;
+    cursor: pointer;
+}
+
+.meta-item .metaItem-option:hover {
+    text-decoration: underline;
+}
+
+
+.profile-main .info-navi2 {
+
+}

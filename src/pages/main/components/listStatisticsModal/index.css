@@ -1,0 +1,40 @@
+.statistics-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.statistics-left {
+    flex: 1;
+}
+
+.statistics-right {
+    padding-left: 50px;
+}
+
+.statistics-left .statistics-header h3 {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.statistics-left .statistics-item {
+    display: flex;
+    flex-direction: row;
+    padding: 10px 5px;
+}
+
+.statistics-item .statistics-title:after {
+    content:' :'
+}
+
+.statistics-item .statistics-content {
+    margin-left: auto;
+}
+
+.statistics-memberList {
+    max-height: 132px;
+    overflow: auto;
+}
+
+.avatar {
+    margin-left: 0;
+}

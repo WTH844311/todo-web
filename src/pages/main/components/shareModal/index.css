@@ -1,0 +1,153 @@
+/* 弹窗-管理访问权限 */
+.SAMModal-limitAccess {
+    height: 135px;
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    margin-top: -23px;
+}
+
+.SAMModal-limitAccess > .limitAccess-around {
+    color: black;
+    display: flex;
+    justify-content: space-between;
+}
+
+.SAMModal-limitAccess > span {
+    color: #767678;
+}
+
+.SAMModal-link {
+    padding: 20px 0;
+    border-top: 1px solid #e6e6e6;
+}
+
+.SAMModal-link > span {
+    display: block;
+    font-size: 16px;
+    color: #767678;
+    margin-bottom: 10px;
+}
+
+.SAMModal-link > p {
+    color: black;
+}
+
+/* 弹窗-共享列表 */
+.SOModal-members {
+    min-height: 150px;
+    margin-top: -20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    overflow-y: auto;
+}
+
+.SOModal-members span {
+    font-size: 16px;
+    color: #767678;
+}
+
+.SOModal-members.assignment > .SOModal-memberItem {
+    padding: 5px;
+}
+
+.SOModal-members.assignment > .SOModal-memberItem:hover {
+    background-color: rgba(228, 228, 239, 0.788);
+}
+
+.SOModal-members > .SOModal-memberItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.SOModal-memberItem > span {
+    font-size: 14px;
+}
+
+.SOModal-memberItem > .SOModal-memberInfo {
+    display: flex;
+    align-items: center;
+}
+
+.SOModal-memberInfo > span {
+    margin-left: 10px;
+    color: black;
+}
+
+.SOModal-memberInfo > .SOModal-avatar {
+    height: 32px;
+    width: 32px;
+
+    border-radius: 50%;
+    background-color: #5524a3;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.SOModal-avatar > span {
+    font-weight: 500;
+    color: White;
+}
+
+.SOModal-memberItem > .SOModal-memberDelete {
+    height: 32px;
+    width: 32px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.SOModal-memberDelete:hover {
+    background-color: #f5f5f5;
+}
+
+.SOModal-inviteLink {
+    height: 120px;
+    padding-top: 20px;
+    border-top: 1px solid #e6e6e6;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.SOModal-inviteLink > .CopySharingLink {
+    display: flex;
+    justify-content: space-between;
+}
+
+.CopySharingLink > .CopySharingLink-input {
+    flex: 1 1 0px;
+    background: #ededed;
+    color: #34373d;
+    box-shadow: none;
+    margin-right: 10px;
+    font-size: 16px;
+    font-weight: 400;
+    padding: 5px;
+}
+
+.SOModal-inviteLink > span {
+    text-align: center;
+}
+
+.modal-sharing .unshared .sharing-state {
+    padding-bottom: 30px;
+}
+
+.modal-sharing .unshared p {
+    font-size: 1.4rem;
+}
+
+.modal-sharing .sharing-state,
+.assignee-picker .sharing-state {
+    text-align: center;
+    padding: 0 20px 10px 20px;
+}

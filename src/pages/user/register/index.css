@@ -1,0 +1,36 @@
+.register-container {
+    height: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: #5353da;
+}
+
+.register-form-container {
+    width: 440px;
+    min-height: 300px;
+    padding: 40px;
+    background-color: white;
+}
+
+.register-title {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    color: black;
+}
+
+.register-form-option {
+    display: flex;
+    justify-content: space-between;
+}
+
+.email-captcha {
+    display: flex;
+
+}
+
+.email-captcha .ant-btn {
+    margin-left: 10px;
+    height: 39px;
+}

@@ -1,0 +1,136 @@
+/* 左边 */
+.app > .leftColumn {
+    border-right: 1px solid #eaeaea;
+    background: #f4f4f4;
+    transition: width 180ms ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.leftColumn-entered {
+    width: 200px;
+    border: #346fef;
+}
+
+@media (min-width: 1010px) {
+    .app > .leftColumn-entered {
+        width: 290px;
+    }
+}
+
+.app > .leftColumn-exited {
+    width: 50px;
+}
+
+.leftColumn > .sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.sidebar > .sidebar-header {
+    height: 48px;
+    margin-top: 12px;
+    justify-content: space-between;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sidebar-header > .hamburgerMenu {
+    cursor: pointer;
+    padding: 6px 9px;
+}
+
+.sidebar > .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    padding-top: 1px;
+}
+
+.sidebar-content > .sidebar-scroll {
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.sidebar-scroll > .list-tree {
+    padding-top: 8px;
+    padding-inline-start: 0;
+}
+
+.list-tree > .listItem-container {
+    min-width: 50px;
+}
+
+.listItem-container:hover {
+    background: #fdfdfd;
+}
+
+.listItem-container.active {
+    background: #ededed !important;
+}
+
+.listItem-container.active .listItem-title,
+.listItem-container.active .listItem-count {
+    font-weight: 600;
+}
+
+.listItem-container > .listItem {
+    cursor: pointer;
+    box-sizing: border-box;
+    min-height: 2.3rem;
+    height: 2.3rem;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    background: inherit;
+}
+
+.listItem > .listItem-icon {
+    padding: 0 5px;
+}
+
+.listItem-icon, .listItem-shareIcon {
+    height: 18px
+}
+
+.listItem > .listItem-title {
+    color: #34373d;
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin: 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listItem > .listItem-shareIcon {
+    padding: 0 4px 0 0;
+}
+
+.listItem > .listItem-count {
+    color: #34373d;
+    font-size: 0.9rem;
+    padding: 0 4px;
+    margin-left: auto;
+}
+
+.list-tree > .sidebar-lastStaticList {
+    margin: 9px 16px;
+    height: 1px
+}
+
+.sidebar-content > .sidebar-addList {
+    z-index: 1;
+    display: flex;
+    flex-shrink: 0;
+    box-shadow: 0 -1px 0 #eaeaea;
+}

@@ -1,0 +1,108 @@
+.rightColumn-visible #notifications {
+    margin: 0 358px;
+}
+
+#notifications {
+    right: 0;
+    padding: 0 12px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+    background: transparent;
+    max-height: 100%;
+    width: 400px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    z-index: 1000;
+    position: absolute;
+}
+
+.notificationToast {
+    box-sizing: border-box;
+    margin-top: 12px;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 5px;
+    box-shadow: 0 1px 12px rgba(52,55,61,0.6);
+    cursor: pointer;
+}
+
+.notificationToast-body {
+    box-sizing: border-box;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 16px 8px;
+}
+
+.notificationToast-textWrapper {
+    font-size: .9rem;
+    font-weight: 500;
+    color: #34373d;
+    cursor: default;
+    position: relative;
+    flex: 1 1 0px;
+    cursor: inherit;
+    overflow: hidden;
+    margin: 0 8px;
+}
+
+.notificationToast-text {
+    overflow: hidden;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.metaDataInfo {
+    display: flex;
+    align-items: center;
+    font-size: .7rem;
+    line-height: 1.1rem;
+    color: #767678;
+    flex-wrap: wrap;
+}
+
+.metaDataInfo .metaDataInfo-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.taskItemInfo-date, 
+.taskItemInfo-reminder, 
+.taskItemInfo-note, 
+.taskItemInfo-steps, 
+.taskItemInfo-myDay {
+    display: flex;
+    align-items: center;
+}
+
+body .hidden {
+    display: none !important;
+}
+
+.notificationToast-buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+.notificationToast-buttons button {
+    padding: 10px 32px;
+    text-align: center;
+    cursor: pointer;
+    font-size: .9rem;
+    height: auto;
+    border-left: 1px solid #eaeaea;
+}
+
+.notificationToast-postponeButton {
+    border-bottom: 1px solid #eaeaea;
+    color: #465efc;
+    font-weight: bold;
+}
+
+.notificationToast-postponeButton, .notificationToast-cancelButton {
+    flex: 1;
+}

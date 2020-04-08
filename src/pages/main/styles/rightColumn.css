@@ -1,0 +1,621 @@
+/* 右边 */
+.app > .rightColumn {
+    box-sizing: border-box;
+    background: #f4f4f4;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    transition: width 180ms ease;
+    width: calc(100% - 50px);
+    max-width: 360px;
+}
+
+.app > .rightColumn-entered {
+    width: calc(100% - 50px)
+}
+
+.app > .rightColumn-exited {
+    width: 0;
+}
+
+.rightColumn > .details {
+    height: 100%;
+    position: relative;
+    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 360px;
+    box-sizing: border-box;
+    flex: 1;
+    border-left: 1px solid #eaeaea;
+}
+
+.details > .details-body {
+    overflow: auto;
+    margin-top: 10px;
+    padding: 0 10px 16px 10px;
+    overflow-x: hidden;
+    flex: 1;
+}
+
+.details-body > .detailHeader {
+    z-index: 10;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 1px solid #eaeaea;
+    border-radius: 2px 2px 0 0;
+    border-bottom: 0;
+    padding: 0 10px 2px 10px;
+}
+
+.detailHeader > .detailHeader-titleWrapper {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.detailHeader-titleWrapper > .detailHeader-checkbox, .detailHeader-titleWrapper > .importanceButton {
+    align-self: flex-start;
+    margin: 12px 0;
+    height: 28px;
+    width: 28px;
+}
+
+.detailHeader-titleWrapper > .detailHeader-title {
+    position: relative;
+    align-self: flex-start;
+    margin: 10px 0;
+    padding: 4px 0;
+    border-radius: 2px;
+    font-size: 1.0rem;
+    font-weight: 600;
+    flex: 1 1 0px;
+}
+
+.detailHeader-titleWrapper > .detailHeader-title:hover {
+    background: #f5f5f5;
+}
+
+.detailHeader-titleWrapper > .importanceButton {
+    margin-left: 4px;
+    padding-left: 5px;
+}
+
+.editableContent {
+    flex: 1 1 0px;
+}
+
+.detailHeader-title > .editableContent {
+    width: 100%;
+    padding: 0 10px;
+    overflow: visible;
+    box-sizing: border-box;
+}
+
+.detailHeader .editableContent-textarea {
+    background: #fafafa;
+    box-shadow: inset 0 0 0 1px #767678;
+    box-sizing: border-box;
+    padding: 5px 10px 5px 10px;
+    margin: -5px 0;
+    border-radius: 2px;
+}
+
+
+.editableContent-textarea {
+    box-shadow: none;
+    display: block;
+    min-height: 15px;
+    font-size: .9rem;
+}
+
+.editableContent-edit, .editableContent-display, .editableContent-textarea {
+    height: auto;
+    border: none;
+    font-weight: 400;
+    line-height: 1.4rem;
+    word-wrap: break-word;
+    word-break: break-all;
+    width: 100%;
+    color: #34373d;
+}
+
+.editableContent-edit, .editableContent-display, .editableContent-textarea {
+    font-size: .9rem;
+    font-weight: 200;
+}
+
+.detailHeader .editableContent.edit {
+    padding: 0;
+}
+
+.detailHeader .editableContent.edit .editableContent-textarea {
+    border: 0;
+    height: 32px;
+    overflow: hidden;
+    font-weight: 600;
+}
+
+.editableContent-display, .editableContent-display span, .editableContent-display a {
+    user-select: text;
+}
+
+.editableContent.small .editableContent-edit, .editableContent.small .editableContent-display, .editableContent.small .editableContent-textarea {
+    font-size: .9rem;
+    line-height: 1.3rem;
+    font-weight: 500;
+}
+
+.editableContent-textarea, .editableContent-display {
+    min-height: 15px;
+}
+
+.detailHeader.completed .editableContent-display {
+    text-decoration: line-through;
+    color: #767678;
+}
+
+.detailHeader .editableContent-display {
+    font-weight: 600;
+}
+
+/* 步骤 */
+.details-body > .steps {
+    z-index: 5;
+    background: white;
+    padding: 0px 6px 2px;
+    border: 1px solid #eaeaea;
+    border-top: 0;
+    border-bottom: 0;
+}
+
+.steps > .steps-inner > .step {
+    display: flex;
+    align-items: center;
+    min-height: 42px;
+}
+
+.step:hover {
+    background-color: #f5f5f5;
+}
+
+.step.selected {
+    background: #f4f6ff;
+}
+
+.step > .checkBox {
+    margin-left: 2px;
+}
+
+.step > .step-body {
+    position: relative;
+    margin: 0 6px;
+    box-shadow: 0 1px 0 0 #eaeaea;
+    display: flex;
+    align-items: center;
+    flex: 1 1 0px;
+}
+
+.step:hover > .step-body {
+    box-shadow: none;
+}
+
+.step.completed .editableContent-display {
+    text-decoration: line-through;
+    color: #767678;
+}
+
+.step.selected > .step-body {
+    box-shadow: none;
+}
+
+.step-body > .step-title {
+    margin-left: 2px;
+    padding: 6px 8px 6px 0;
+    flex: 1 1 0px;
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+}
+
+.step-title > .editableContent {
+    width: 100%;
+}
+
+.step-body > .step-delete {
+    fill: #767678;
+    padding: 3px 0;
+}
+
+.step-delete > .stepDelete-icon {
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    box-sizing: content-box;
+}
+
+.step:hover .stepDelete-icon {
+    opacity: 1;
+}
+
+.steps > .baseAdd.addStep {
+    display: flex;
+    align-items: center;
+    height: 40px;
+}
+
+.baseAdd.addStep > .baseAdd-icon {
+    margin-top: -8px;
+}
+
+.baseAdd.addStep > .baseAdd-input {
+    margin-left: 4px;
+}
+
+.details-body > .details-separator {
+    top: 55px;
+
+    position: sticky;
+    pointer-events: none;
+    z-index: 10;
+    border: 1px solid #eaeaea;
+    border-top: 0;
+    border-radius: 0 0 2px 2px;
+    height: 2px;
+    background: white;
+}
+
+.details-body > .section {
+    z-index: 5;
+    position: relative;
+    background: white;
+    margin: 10px 0;
+    border: 1px solid #eaeaea;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+}
+
+.section .section-item {
+    min-height: 52px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-shadow: 24px 25px 0 -24px rgba(0, 0, 0, 0.08);
+}
+
+.section .section-item:hover {
+    box-shadow: none;
+    background-color: #f5f5f5;
+}
+
+.section .section-item:last-child {
+    box-shadow: none;
+}
+
+.details .section-item:hover .section-title,
+.details .section-item:hover .section-description {
+    color: #34373d;
+}
+
+.details .section-item:hover .section-delete svg,
+.details .section-item:hover .section-icon svg {
+    fill : #34373d;
+}
+
+.details .section-item.isSet .section-title {
+    color: #465efc;
+}
+.details .section-item.isSet .section-icon svg {
+    fill: #465efc;
+}
+
+/* 附件 */
+.details .section-item .inputFile {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.details .section-item .inputFile+label {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: pointer;
+}
+
+.section .section-item.file-item {
+    border-radius: 1px;
+    box-shadow: 33px 34px 0 -33px rgba(0, 0, 0, 0.08);
+    padding: 8px 16px 8px 14px;
+}
+
+.section-item.file-item > .thumbnail-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 3px;
+    background-color: #3e69e3;
+    color: #fff;
+    font-size: .6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.thumbnail-wrapper > .thumbnail {
+    max-width: 36px;
+    height: 24px;
+    text-align: center;
+    line-height: 1.8rem;
+}
+
+.section-item.file-item > .file-content {
+    margin-left: 16px;
+
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #333333;
+}
+
+.file-content > .file-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 1.0rem;
+}
+
+.file-content > .file-metadata {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-metadata > span {
+    height: 16px;
+    font-size: .8rem;
+    line-height: .6rem;
+    color: #666666;
+}
+
+.file-metadata > span::after {
+    color: #c2c2c2;
+    content: '•';
+    margin: 0 6px;
+}
+
+.file-metadata > span:last-child::after {
+    content: ''
+}
+
+.section-item > .section-innerClick {
+    padding: 0 8px;
+}
+
+.section-item.isSet {
+    padding: 0 8px;
+}
+
+.section-item.isSet > .section-innerClick {
+    padding: 0;
+    height: auto;
+    min-height: 36px;
+}
+
+.section-item.isSet .section-title {
+    color: #465efc;
+}
+
+.section-item > .section-delete {
+    opacity: 0;
+    margin: 0 2px;
+}
+
+.section-item.file-item .section-delete {
+    width: 16px;
+    opacity: 0;
+    margin: 0 -6px 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    box-sizing: content-box;
+}
+
+.section-item.file-item:hover > .section-delete {
+    opacity: 100;
+}
+
+.section-item.isSet > .section-delete {
+    height: 32px;
+    width: 32px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.section-item.isSet:hover > .section-delete {
+    opacity: 100;
+}
+
+.section-innerClick > .section-inner {
+    padding: 4px 0;
+    display: flex;
+    flex: auto;
+}
+
+.section-inner > .section-delete, .section-inner > .section-icon {
+    margin: 0 4px;
+    fill: #767678;
+    color: #767678;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    text-align: center;
+}
+
+.section-inner > .section-content {
+    text-align: left;
+
+    margin-right: 8px;
+    margin-left: 8px;
+    overflow: hidden;
+    flex: auto;
+}
+
+.section-content > .section-title {
+    font-size: 0.9rem;
+    line-height: 1.4rem;
+    color: #767678;
+}
+
+.details .section-item.isSet .section-title {
+    color: #465efc;
+}
+.details .section-item.isSet .section-icon svg {
+    fill: #465efc;
+}
+
+.details .section-item.isPast .section-title {
+    color: #db3a29;
+}
+
+.details .section-item.isPast .section-icon svg {
+    fill: #db3a29;
+}
+
+.details .section-item.isInactive .section-title {
+    color: #767678;
+}
+
+.details .section-item.isInactive .section-icon svg {
+    fill: #767678;
+}
+
+.details .section-item:hover.isPast .section-title {
+    color: #af2e20;
+}
+
+.details .section-item:hover.isPast .section-icon svg {
+    fill: #af2e20;
+}
+
+.section-content > .section-description {
+    color: #767678;
+    font-size: .6rem;
+}
+
+/* 备注 */
+.section.no-border {
+    border: none;
+}
+
+.section-item.detailNote {
+    user-select: text;
+
+    align-items: flex-start;
+    padding: 16px;
+    height: auto;
+    border: 1px solid #eaeaea;
+    border-width: 1px;
+    border-radius: 2px;
+}
+
+.details .section-item.detailNote:hover {
+    background: transparent;
+    border-color: #c2c2c2;
+}
+
+.details .section-item.detailNote.edit {
+    border-color: #346fef;
+}
+
+
+.detailNote > .editableContent {
+    width: 100%;
+}
+
+.editableContent.multiLine .editableContent-display {
+    white-space: pre-wrap;
+}
+
+.editableContent.empty .editableContent-display {
+    color: #767678;
+}
+
+.editableContent-footer {
+    display: flex;
+    margin-top: 24px;
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.editableContent-footer > .editableContent-lastEdited {
+    flex-grow: 1;
+    color: #767678;
+}
+
+
+/* 底部 */
+.details > .detailFooter {
+    min-height: 38px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f4f4f4;
+    border-top: 1px solid #eaeaea;
+}
+
+.detailFooter > .detailFooter-close, .detailFooter > .detailFooter-trash {
+    height: 28px;
+    width: 32px;
+    padding: 4px;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 2px;
+}
+
+.detailFooter > .detailFooter-info {
+    font-size: .8rem;
+    color: #666666;
+    text-align: center;
+}
+
+.avatar {
+    position: relative;
+    text-align: center;
+    height: 24px;
+    width: 24px;
+    flex: 0 0 auto;
+
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 24px;
+    height: 24px;
+    background-color: #465efc;
+    border-radius: 50%;
+    margin-right: 10px;
+    margin-left: 8px;
+}

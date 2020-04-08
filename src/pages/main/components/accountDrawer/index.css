@@ -1,0 +1,29 @@
+.account-main {
+    display: flex;
+    flex-direction: row;
+}
+
+.account-main .avatar {
+    height: 90px;
+    width: 90px;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 35px;
+}
+
+.account-main .account-options {
+    display: flex;
+    flex-direction: column;
+    margin-left: 15px;
+}
+
+.account-options a {
+    color: #005A9E;
+    font-weight: 600;
+}
+
+.account-options a:hover {
+    text-decoration: underline;
+}

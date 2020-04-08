@@ -1,0 +1,21 @@
+#root {
+    height: 100%
+}
+
+body ul {
+    list-style: none;
+}
+
+.container {
+    height: 100%
+}
+
+.link {
+    font-size: 16px;
+    color: #0067b8;
+    cursor: pointer;
+}
+
+.link:hover {
+    text-decoration: underline;
+}

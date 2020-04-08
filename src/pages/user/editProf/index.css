@@ -1,0 +1,92 @@
+.banner {
+    background: linear-gradient(to bottom,#005799 0,#0076d1);
+    box-shadow: 0 12px 45px -8px rgba(0,120,215,.35);
+    padding: 30px 100px;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.banner .title {
+    font-size: 35px;
+    font-weight: 900;
+    color: white;
+    width: 50%;
+}
+
+.editProf-main {
+    padding: 50px 100px;
+}
+
+.editProf-main-row {
+    max-width: 640px;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.editProf-main-row label {
+    font-weight: 900;
+    font-size: 16px;
+}
+
+.editProf-main-row .edit-container {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: row;
+}
+
+.edit-container select {
+    width: 100%;
+    padding: 3px 6px;
+    margin-right: 5px;
+    border: 2px solid grey;
+    font-size: 16px;
+}
+
+.submit {
+    display: flex;
+    flex-direction: row;
+    margin-top: 40px;
+}
+
+.submit .submit-buttom-save {
+    width: fit-content;
+    padding: 3px 30px;
+    background-color: #0067b8;
+    border-color: #0067b8;
+    border-width: 2px;
+    border-style: solid;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.submit .submit-buttom-save:hover {
+    border-color: black;
+    text-decoration: underline;
+}
+
+.submit .submit-buttom-cancel {
+    width: fit-content;
+    padding: 3px 30px;
+    background-color: #e4e4e4;
+    border-color: #e4e4e4;
+    border-width: 2px;
+    border-style: solid;
+    font-size: 16px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.submit .submit-buttom-cancel:hover {
+    border-color: rgba(0,0,0,0.4);
+    text-decoration: underline;
+}
+
+.postalCode-input {
+    padding: 3px 6px;
+    margin-right: 5px;
+    border: 2px solid grey;
+    font-size: 16px;
+}
