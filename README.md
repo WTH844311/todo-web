@@ -4,7 +4,7 @@
 ### 所用技术栈
 1. react v16.13.0
 2. mobx v5.15.4
-3. antd v3.26.8
+3. antd
 4. indexedDB
 
 ### UI界面
