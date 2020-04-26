@@ -34,6 +34,10 @@
     color: #1c76c5;
 }
 
+.theme-skyblue .chat-message .chat-avatar {
+    background-color: #1c76c5 !important;
+}
+
 
 .theme-blue .baseAdd.addTask .baseAdd-icon svg {
     fill: #3459c1;
@@ -82,6 +86,10 @@
 
 .theme-green .checkBox .svgIcon svg {
     fill: #5ca52d;
+}
+
+.theme-green .chat-message .chat-avatar {
+    background-color: #5ca52d !important;
 }
 
 .listItem-container .listItem.color-green .listItem-icon path {
@@ -145,6 +153,10 @@
     color: #b24642;
 }
 
+.theme-red .chat-message .chat-avatar {
+    background-color: #b24642 !important;
+}
+
 
 .theme-purple .baseAdd.addTask .baseAdd-icon .icon {
     color: #673aa2;
@@ -180,4 +192,8 @@
 
 .theme-purple #baseAddInput-addTask::placeholder {
     color: #673aa2;
+}
+
+.theme-purple .chat-message .chat-avatar {
+    background-color: #673aa2 !important;
 }

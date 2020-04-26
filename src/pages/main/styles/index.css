@@ -145,21 +145,3 @@ a:hover {
     display: flex;
     align-items: center;
 }
-
-/* 右键菜单 */
-
-
-/* 右侧抽屉 */
-.setting-item .settingItem-header {
-    font-size: 20px;
-    font-weight: 1000;
-    margin-bottom: 10px;
-}
-
-.setting-item svg {
-    margin-right: 5px;
-}
-
-.setting-item button {
-    width: 60px;
-}
