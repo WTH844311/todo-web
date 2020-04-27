@@ -1,0 +1,13 @@
+.setting-item .settingItem-header {
+    font-size: 20px;
+    font-weight: 1000;
+    margin-bottom: 20px;
+}
+
+.setting-item svg {
+    margin-right: 5px;
+}
+
+.setting-item button {
+    width: 60px;
+}

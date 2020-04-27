@@ -105,12 +105,12 @@ class ListStaticsModal extends Component {
                                     <div className='statistics-header'><h3>成员贡献度</h3></div>
                                     <div className='statistics-memberList'>
                                         <div className='statistics-item'>
-                                            <div className='avatar'>{users.find(u => u.user_id === selected_list.owner_id).username.substring(0, 2)}</div>
-                                            <div className='statistics-title'>{users.find(u => u.user_id === selected_list.owner_id).username} (所有者)</div>
+                                            <div className='avatar'>{users.find(u => u.user_id === selected_list.owner_id)?.username.substring(0, 2)}</div>
+                                            <div className='statistics-title'>{users.find(u => u.user_id === selected_list.owner_id)?.username.username} (所有者)</div>
                                             <div className='statistics-content'>{`${(selected_list.tasks.filter(t => t.completed_by === selected_list.owner_id).length/selected_list.tasks.filter(t => t.completed).length*100).toFixed()}%`}</div>
                                         </div>
                                         {selected_list.members.map(m => {
-                                            const username = users.find(u => u.user_id === m).username
+                                            const username = users.find(u => u.user_id === m)?.username
                                             if (selected_list.tasks.filter(t => t.completed_by === m).length === 0) return null
                                             return (
                                                 <div className='statistics-item' key={m}>

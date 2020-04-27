@@ -7,13 +7,14 @@ import './styles/theme.css'
 import React, { Component } from 'react'
 import { observer, inject } from 'mobx-react'
 import { withRouter } from 'react-router-dom'
-import { Icon, Drawer, message, Button } from 'antd'
+import { Icon, message, Button } from 'antd'
 import { ContextMenuTrigger } from "react-contextmenu"
 import ContextMenu from './components/contextMenu/index'
 import ShareModal from './components/shareModal/index'
 import ListStatisticsModal from './components/listStatisticsModal/index'
 import Notification from './components/notification/index'
 import AccountDrawer from './components/accountDrawer/index'
+import SettingDrawer from './components/settingDrawer/index'
 import { arraysEqual, formatDate } from '../../common/util'
 import getIcon from '../../common/icons'
 import db from '../../common/db'
@@ -33,7 +34,8 @@ class Main extends Component {
             searchVisible: false,
             reminderList: [],
             searchValue: '',
-            searchData: null
+            searchData: null,
+            chatButtonDisabled: true
         }
     }
 
@@ -151,7 +153,8 @@ class Main extends Component {
             searchVisible,
             reminderList,
             searchValue,
-            searchData
+            searchData,
+            chatButtonDisabled
         } = this.state
         const {
             listAction,
@@ -166,12 +169,13 @@ class Main extends Component {
             users
         } = data
         const {
-            settingDrawerVisible,
             changeAccountDrawer,
             changeSettingDrawer,
             changeShareOptionModal
         } = state
         if (!users) return null
+        if (!localStorage.user) return null
+        const user = JSON.parse(localStorage.user)
         const defaultList = [myday, important, planned, assigned_to_me, inbox]
         const { list_index, task_id } = this.props.match.params
         const selected_task = tasks.find(task => task.local_id === task_id)
@@ -356,6 +360,11 @@ class Main extends Component {
                 onMouseDown={e => {
                     if (e.button === 2) this.props.history.push(`/lists/${list_index}/tasks/${task.local_id}`)
                 }}
+                draggable
+                onDragStart={() => this.fromTask = task}
+                onDragOver={e => e.preventDefault()}
+                onDragEnd={() => this.fromTask = null}
+                onDrop={() => data.swapTaskPosition(this.fromTask, task)}
             >
                 <div className='taskItem-body'>
                     <span className="checkBox big" title={`${task.title} 标记为已完成`} onClick={() => taskAction.changeTaskCompleted(task)}>
@@ -388,8 +397,8 @@ class Main extends Component {
                                             <span className='taskItemInfo-steps'>
                                                 <span className="taskItemInfo-label">
                                                     {
-                                                        task.list_id === 'inbox'
-                                                            ? 'inbox'
+                                                        task.list_id === '000000000000000000000000'
+                                                            ? '任务'
                                                             : lists.find(l => l.local_id === task.list_id)
                                                                 ? lists.find(l => l.local_id === task.list_id).title
                                                                 : 1
@@ -456,7 +465,7 @@ class Main extends Component {
                             </button>
                         </ContextMenuTrigger>
                     </div>
-                    {task.assignment && users.find(u => u.user_id === task.assignment.assignee) && <div className='avatar'>{users.find(u => u.user_id === task.assignment.assignee).username.substring(0, 2)}</div>}
+                    {task.assignment && users.find(u => u.user_id === task.assignment.assignee) && <div className='avatar'>{users.find(u => u.user_id === task.assignment.assignee)?.username.substring(0, 2)}</div>}
                     <span className='importanceButton' onClick={() => taskAction.changeTaskImportance(task)}>
                         {task.importance ? getIcon({ name: 'important' }) : getIcon({ name: 'unimportant' })}
                     </span>
@@ -514,7 +523,7 @@ class Main extends Component {
                     <div className='headerRightRegion'>
                         <div className='avatar-container' onClick={changeAccountDrawer}>
                             <div className='avatarContainer-circle'>
-                                {localStorage.user && <span>{JSON.parse(localStorage.user).username.charAt(0)}</span>}
+                                {localStorage.user && <span>{JSON.parse(localStorage.user)?.username.charAt(0)}</span>}
                             </div>
                         </div>
                     </div>
@@ -531,13 +540,21 @@ class Main extends Component {
                             </div>
                             <div className='sidebar-content'>
                                 <nav role='navigation' className='sidebar-scroll'>
-                                    <ul className='list-tree'>
+                                    <ul id="sortable" className='list-tree'>
                                         {defaultList.map(list => {
                                             if (list._id === 'inbox') {
                                                 return <ContextMenuTrigger key={list._id} id='basicList-menu'>
                                                     <li className={`listItem-container ${list_index === list._id ? 'active' : ''}`} onClick={() => this.setListIndex(list._id)} onMouseDown={e => {
                                                         if (e.button === 2) this.setListIndex(list._id)
-                                                    }}>
+                                                    }}
+                                                        onDragOver={e => e.preventDefault()}
+                                                        onDrop={() => {
+                                                            if (this.fromTask && this.fromTask._id !== '000000000000000000000000') {
+                                                                data.taskAction.moveTaskToList(this.fromTask, '000000000000000000000000')
+                                                            }
+                                                        }}
+                                                        onDragEnd={() => [this.fromTask, this.fromList] = [null, null]}
+                                                    >
                                                         <div className={`listItem color-${list.theme}`}>
                                                             <div className='listItem-icon'><Icon type="home" /></div>
                                                             <div className="listItem-title"><span>{list.title}</span></div>
@@ -546,7 +563,24 @@ class Main extends Component {
                                                     </li>
                                                 </ContextMenuTrigger>
                                             }
-                                            return <li key={list._id} className={`listItem-container ${list_index === list._id ? 'active' : ''}`} onClick={() => this.setListIndex(list._id)}>
+                                            return <li 
+                                                key={list._id} 
+                                                className={`listItem-container ${list_index === list._id ? 'active' : ''}`} 
+                                                onClick={() => this.setListIndex(list._id)}
+                                                onDragOver={e => e.preventDefault()}
+                                                onDrop={() => {
+                                                    if (this.fromTask) {
+                                                        if (list._id === 'myday' && !this.fromTask.myDay) {
+                                                            data.taskAction.changeTaskMyday(this.fromTask)
+                                                        } else if (list._id === 'important' && !this.fromTask.importance) {
+                                                            data.taskAction.changeTaskImportance(this.fromTask)
+                                                        } else if (selected_list.sharing_status !== 'NotShare' && list._id === 'assigned_to_me') {
+                                                            data.taskAction.assignTask(this.fromTask, user.user_id, user.user_id)
+                                                        }
+                                                    }
+                                                }}
+                                                onDragEnd={() => [this.fromTask, this.fromList] = [null, null]}
+                                            >
                                                 <div className={`listItem color-${list.theme}`}>
                                                     <div className='listItem-icon'>{list.icon}</div>
                                                     <div className="listItem-title"><span>{list.title}</span></div>
@@ -558,33 +592,45 @@ class Main extends Component {
                                         {
                                             lists.slice().sort((a, b) => b.position - a.position).map(list => (
                                                 <ContextMenuTrigger key={list.local_id} id='userList-menu'>
-                                                    <div className='sortable-lists' onClick={() => {
-                                                        if (searchValue !== '') this.setState({ searchValue: '' })
-                                                        this.setListIndex(list.local_id)
-                                                    }} onMouseDown={e => {
-                                                        if (e.button === 2) this.setListIndex(list.local_id)
-                                                    }}>
-                                                        <li className={`listItem-container ${list_index === list.local_id ? 'active' : ''}`}>
-                                                            <div className={`listItem ${list.theme ? 'color-' + list.theme : ''}`}>
-                                                                <div className='listItem-icon'>
-                                                                    <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="32362" width="1rem" height="1rem"><path d="M160 128c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32zM192 192h64v64H192z m256 0v64h448V192zM160 384c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32zM192 448h64v64H192z m256 0v64h448V448z m-288 192c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32z m32 64h64v64H192z m256 0v64h448v-64z" fill="#767678" p-id="32363"></path></svg>
-                                                                </div>
-                                                                <div className="listItem-title">
-                                                                    <span>{list.title}</span>
-                                                                </div>
-                                                                {
-                                                                    list.sharing_status !== 'NotShare' && (
+                                                    {/* <Dragger allowX={false}> */}
+                                                        <div className='sortable-lists' onClick={() => {
+                                                            if (searchValue !== '') this.setState({ searchValue: '' })
+                                                            this.setListIndex(list.local_id)
+                                                        }} onMouseDown={e => {
+                                                            if (e.button === 2) this.setListIndex(list.local_id)
+                                                        }} 
+                                                            draggable
+                                                            onDragStart={() => this.fromList = list}
+                                                            onDragOver={e => e.preventDefault()}
+                                                            onDrop={() => {
+                                                                if (this.fromList) {
+                                                                    data.swapListPosition(this.fromList, list)
+                                                                } else {
+                                                                    data.taskAction.moveTaskToList(this.fromTask, list._id)
+                                                                }
+                                                            }}
+                                                            onDragEnd={() => this.fromList = null}
+                                                        >
+                                                            <li className={`listItem-container ${list_index === list.local_id ? 'active' : ''}`}>
+                                                                <div className={`listItem ${list.theme ? 'color-' + list.theme : ''}`}>
+                                                                    <div className='listItem-icon'>
+                                                                        <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="32362" width="1rem" height="1rem"><path d="M160 128c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32zM192 192h64v64H192z m256 0v64h448V192zM160 384c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32zM192 448h64v64H192z m256 0v64h448V448z m-288 192c-17.728 0-32 14.272-32 32v128c0 17.728 14.272 32 32 32h128c17.728 0 32-14.272 32-32v-128c0-17.728-14.272-32-32-32z m32 64h64v64H192z m256 0v64h448v-64z" fill="#767678" p-id="32363"></path></svg>
+                                                                    </div>
+                                                                    <div className="listItem-title">
+                                                                        <span>{list.title}</span>
+                                                                    </div>
+                                                                    {list.sharing_status !== 'NotShare' && (
                                                                         <div className="listItem-shareIcon">
                                                                             <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="64720" width="1rem" height="1rem"><path d="M824.2 699.9c-25.4-25.4-54.7-45.7-86.4-60.4C783.1 602.8 812 546.8 812 484c0-110.8-92.4-201.7-203.2-200-109.1 1.7-197 90.6-197 200 0 62.8 29 118.8 74.2 155.5-31.7 14.7-60.9 34.9-86.4 60.4C345 754.6 314 826.8 312 903.8c-0.1 4.5 3.5 8.2 8 8.2h56c4.3 0 7.9-3.4 8-7.7 1.9-58 25.4-112.3 66.7-153.5C493.8 707.7 551.1 684 612 684c60.9 0 118.2 23.7 161.3 66.8C814.5 792 838 846.3 840 904.3c0.1 4.3 3.7 7.7 8 7.7h56c4.5 0 8.1-3.7 8-8.2-2-77-33-149.2-87.8-203.9zM612 612c-34.2 0-66.4-13.3-90.5-37.5-24.5-24.5-37.9-57.1-37.5-91.8 0.3-32.8 13.4-64.5 36.3-88 24-24.6 56.1-38.3 90.4-38.7 33.9-0.3 66.8 12.9 91 36.6 24.8 24.3 38.4 56.8 38.4 91.4 0 34.2-13.3 66.3-37.5 90.5-24.2 24.2-56.4 37.5-90.6 37.5z" p-id="64721" fill="#767678"></path><path d="M361.5 510.4c-0.9-8.7-1.4-17.5-1.4-26.4 0-15.9 1.5-31.4 4.3-46.5 0.7-3.6-1.2-7.3-4.5-8.8-13.6-6.1-26.1-14.5-36.9-25.1-25.8-25.2-39.7-59.3-38.7-95.4 0.9-32.1 13.8-62.6 36.3-85.6 24.7-25.3 57.9-39.1 93.2-38.7 31.9 0.3 62.7 12.6 86 34.4 7.9 7.4 14.7 15.6 20.4 24.4 2 3.1 5.9 4.4 9.3 3.2 17.6-6.1 36.2-10.4 55.3-12.4 5.6-0.6 8.8-6.6 6.3-11.6-32.5-64.3-98.9-108.7-175.7-109.9-110.9-1.7-203.3 89.2-203.3 199.9 0 62.8 28.9 118.8 74.2 155.5-31.8 14.7-61.1 35-86.5 60.4-54.8 54.7-85.8 126.9-87.8 204-0.1 4.5 3.5 8.2 8 8.2h56.1c4.3 0 7.9-3.4 8-7.7 1.9-58 25.4-112.3 66.7-153.5 29.4-29.4 65.4-49.8 104.7-59.7 3.9-1 6.5-4.7 6-8.7z" p-id="64722" fill="#767678"></path></svg>
                                                                         </div>
-                                                                    )
-                                                                }
-                                                                <div className="listItem-count">
-                                                                    <span>{list.tasks ? (list.tasks.filter(t => !t.completed).length || null):null}</span>
+                                                                    )}
+                                                                    <div className="listItem-count">
+                                                                        <span>{list.tasks ? (list.tasks.filter(t => !t.completed).length || null):null}</span>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        </li>
-                                                    </div>
+                                                            </li>
+                                                        </div>
+                                                    {/* </Dragger> */}
                                                 </ContextMenuTrigger>
                                             ))
                                         }
@@ -661,28 +707,24 @@ class Main extends Component {
                                 {!searchData && (
                                     <div className='tasksToolbar-right'>
                                         <div className='tasksToolbar-actions'>
-                                            {
-                                                !selected_list.defaultList && (
-                                                    <div className='tasksToolbar-actionsItem' onClick={changeShareOptionModal}>
-                                                        <div className='toolbarButton-icon'>
-                                                            <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="41408" width="20" height="20"><path d="M800 608v128h128v64h-128v128h-64v-128h-128v-64h128v-128h64zM512 128a256 256 0 0 1 161.088 454.976c-22.4 18.88-37.952 28.608-69.184 40A254.656 254.656 0 0 1 512 640a255.36 255.36 0 0 1-91.904-16.96 288.064 288.064 0 0 0-195.968 264.48L224 896H160a352 352 0 0 1 190.912-313.056A256 256 0 0 1 512 128z m0 64a192 192 0 1 0 0 384 192 192 0 0 0 0-384z" fill="#767678" p-id="41409"></path></svg>
-                                                        </div>
-                                                        <div className='sharingButton-membersCount'>{selected_list.sharing_status === 'NotShare' ? '共享' : selected_list.members.length + 1}</div>
+                                            {!selected_list.defaultList && (
+                                                <div className='tasksToolbar-actionsItem' onClick={changeShareOptionModal}>
+                                                    <div className='toolbarButton-icon'>
+                                                        <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="41408" width="20" height="20"><path d="M800 608v128h128v64h-128v128h-64v-128h-128v-64h128v-128h64zM512 128a256 256 0 0 1 161.088 454.976c-22.4 18.88-37.952 28.608-69.184 40A254.656 254.656 0 0 1 512 640a255.36 255.36 0 0 1-91.904-16.96 288.064 288.064 0 0 0-195.968 264.48L224 896H160a352 352 0 0 1 190.912-313.056A256 256 0 0 1 512 128z m0 64a192 192 0 1 0 0 384 192 192 0 0 0 0-384z" fill="#767678" p-id="41409"></path></svg>
                                                     </div>
-                                                )
-                                            }
-                                            {
-                                                selected_list.sort_type !== -1 && (
-                                                    <ContextMenuTrigger id='listOptions-sort' holdToDisplay={0}>
-                                                        <div className='tasksToolbar-actionsItem'>
-                                                            <div className='toolbarButton-icon'>
-                                                                <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="38863" width="20" height="20"><path d="M922.345786 372.183628l-39.393195 38.687114L676.138314 211.079416l0 683.909301-54.713113 0L621.425202 129.010259l53.320393 0L922.345786 372.183628zM349.254406 894.989741 101.654214 651.815349l39.393195-38.687114 206.814276 199.792349L347.861686 129.010259l54.713113 0 0 765.978459L349.254406 894.988718z" p-id="38864" fill="#767678"></path></svg>
-                                                            </div>
-                                                            <span style={{ marginLeft: '3px' }}>排序</span>
+                                                    <div className='sharingButton-membersCount'>{selected_list.sharing_status === 'NotShare' ? '共享' : selected_list.members.length + 1}</div>
+                                                </div>
+                                            )}
+                                            {selected_list.sort_type !== -1 && (
+                                                <ContextMenuTrigger id='listOptions-sort' holdToDisplay={0}>
+                                                    <div className='tasksToolbar-actionsItem'>
+                                                        <div className='toolbarButton-icon'>
+                                                            <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="38863" width="20" height="20"><path d="M922.345786 372.183628l-39.393195 38.687114L676.138314 211.079416l0 683.909301-54.713113 0L621.425202 129.010259l53.320393 0L922.345786 372.183628zM349.254406 894.989741 101.654214 651.815349l39.393195-38.687114 206.814276 199.792349L347.861686 129.010259l54.713113 0 0 765.978459L349.254406 894.988718z" p-id="38864" fill="#767678"></path></svg>
                                                         </div>
-                                                    </ContextMenuTrigger>
-                                                )
-                                            }
+                                                        <span style={{ marginLeft: '3px' }}>排序</span>
+                                                    </div>
+                                                </ContextMenuTrigger>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -707,71 +749,67 @@ class Main extends Component {
                                     </div>
                                 )}
                                 <div className='main-background'>
-                                    {
-                                        searchData ? (
-                                            <div className='searchResults'>
+                                    {searchData ? (
+                                        <div className='searchResults'>
+                                            <div className='chunkedComponentList sticky'>
+                                                <div className='chunkedScrollContainer'>
+                                                    <div className='componentList space-aside'>
+                                                        {searchData.tasks.length > 0 && (
+                                                            <>
+                                                                <h3 className="searchResultsGroup-header"><span>任务</span></h3>
+                                                                {searchData.tasks.map((task, index) => TaskItem(task, index))}
+                                                            </>
+                                                        )}
+                                                        {searchData.note.length > 0 && (
+                                                            <>
+                                                                <h3 className="searchResultsGroup-header"><span>备注</span></h3>
+                                                                {searchData.note.map((task, index) => TaskItem(task, index))}
+                                                            </>
+                                                        )}
+                                                        {searchData.step.length > 0 && (
+                                                            <>
+                                                                <h3 className="searchResultsGroup-header"><span>步骤</span></h3>
+                                                                {searchData.step.map((task, index) => TaskItem(task, index))}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className='tasks'>
                                                 <div className='chunkedComponentList sticky'>
                                                     <div className='chunkedScrollContainer'>
                                                         <div className='componentList space-aside'>
-                                                            {searchData.tasks.length > 0 && (
-                                                                <>
-                                                                    <h3 className="searchResultsGroup-header"><span>任务</span></h3>
-                                                                    {searchData.tasks.map((task, index) => TaskItem(task, index))}
-                                                                </>
-                                                            )}
-                                                            {searchData.note.length > 0 && (
-                                                                <>
-                                                                    <h3 className="searchResultsGroup-header"><span>备注</span></h3>
-                                                                    {searchData.note.map((task, index) => TaskItem(task, index))}
-                                                                </>
-                                                            )}
-                                                            {searchData.step.length > 0 && (
-                                                                <>
-                                                                    <h3 className="searchResultsGroup-header"><span>步骤</span></h3>
-                                                                    {searchData.step.map((task, index) => TaskItem(task, index))}
-                                                                </>
-                                                            )}
+                                                            {getSortedList().filter(t => !t.completed || selected_list.show_completed).map((task, index) => TaskItem(task, index))}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ) : (
-                                                <>
-                                                    <div className='tasks'>
-                                                        <div className='chunkedComponentList sticky'>
-                                                            <div className='chunkedScrollContainer'>
-                                                                <div className='componentList space-aside'>
-                                                                    {getSortedList().filter(t => !t.completed || selected_list.show_completed).map((task, index) => TaskItem(task, index))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                            {list_index !== 'assigned_to_me' && (
+                                                <div className='baseAdd addTask'>
+                                                    <div className='baseAdd-icon'>
+                                                        <Icon type="plus" />
                                                     </div>
-                                                    {
-                                                        list_index !== 'assigned_to_me' && (
-                                                            <div className='baseAdd addTask'>
-                                                                <div className='baseAdd-icon'>
-                                                                    <Icon type="plus" />
-                                                                </div>
-                                                                <input
-                                                                    id="baseAddInput-addTask"
-                                                                    className="baseAdd-input chromeless"
-                                                                    type="text"
-                                                                    maxLength="255"
-                                                                    placeholder={`添加${list_index === 'planned' ? '一个今天到期的' : ''}任务`}
-                                                                    tabIndex="-1"
-                                                                    onKeyDown={e => {
-                                                                        if (e.keyCode === 13 && e.target.value !== '') {
-                                                                            taskAction.addTask(list_index, e.target.value)
-                                                                            e.target.value = ''
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        )
-                                                    }
-                                                </>
-                                            )
-                                    }
+                                                    <input
+                                                        id="baseAddInput-addTask"
+                                                        className="baseAdd-input chromeless"
+                                                        type="text"
+                                                        maxLength="255"
+                                                        placeholder={`添加${list_index === 'planned' ? '一个今天到期的' : ''}任务`}
+                                                        tabIndex="-1"
+                                                        onKeyDown={e => {
+                                                            if (e.keyCode === 13 && e.target.value !== '') {
+                                                                taskAction.addTask(list_index, e.target.value)
+                                                                e.target.value = ''
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                     <div className='backgroundLines' />
                                 </div>
                             </div>
@@ -786,43 +824,39 @@ class Main extends Component {
                                     <div className='details-body'>
                                         <div className={`detailHeader ${selected_task.completed ? 'completed' : ''}`}>
                                             <div className='detailHeader-titleWrapper'>
-                                                {
-                                                    selected_task.completed ? (
-                                                        <span className='detailHeader-checkbox checkBox completed' onClick={() => taskAction.changeTaskCompleted(selected_task)}>
-                                                            <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
-                                                        </span>
-                                                    ) : (
-                                                            <span className='checkBox completed' onClick={() => taskAction.changeTaskCompleted(selected_task)}>
-                                                                <i className="icon svgIcon checkbox-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="2 0 24 24"><path fillRule="evenodd" d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path></svg></i>
-                                                                <i className="icon svgIcon checkbox-completed-outline-16 checkBox-hover"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="4 2 24 24"><g fillRule="evenodd"><path d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path><path d="M11.2402 12.792l-1.738-1.749-.709.705 2.443 2.46 3.971-3.957-.706-.708z"></path></g></svg></i>
-                                                            </span>
-                                                        )
-                                                }
+                                                {selected_task.completed ? (
+                                                    <span className='detailHeader-checkbox checkBox completed' onClick={() => taskAction.changeTaskCompleted(selected_task)}>
+                                                        <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
+                                                    </span>
+                                                ) : (
+                                                    <span className='checkBox completed' onClick={() => taskAction.changeTaskCompleted(selected_task)}>
+                                                        <i className="icon svgIcon checkbox-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="2 0 24 24"><path fillRule="evenodd" d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path></svg></i>
+                                                        <i className="icon svgIcon checkbox-completed-outline-16 checkBox-hover"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="4 2 24 24"><g fillRule="evenodd"><path d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path><path d="M11.2402 12.792l-1.738-1.749-.709.705 2.443 2.46 3.971-3.957-.706-.708z"></path></g></svg></i>
+                                                    </span>
+                                                )}
                                                 <div className='detailHeader-title'>
                                                     <div className={`editableContent ${taskRenameInputVisible ? 'edit' : ''}`}>
                                                         <div className={`editableContent${taskRenameInputVisible ? '-edit' : '-display'}`}>
-                                                            {
-                                                                taskRenameInputVisible ? (
-                                                                    <textarea
-                                                                        className="editableContent-textarea"
-                                                                        draggable={false}
-                                                                        autoFocus
-                                                                        maxLength="255"
-                                                                        defaultValue={selected_task.title}
-                                                                        onBlur={() => this.setState({ taskRenameInputVisible: false })}
-                                                                        onKeyDown={e => {
-                                                                            if (e.keyCode === 13 && e.target.value !== '') {
-                                                                                taskAction.renameTask(selected_task, e.target.value)
-                                                                                this.setState({ taskRenameInputVisible: false })
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                        <span style={{ display: 'block' }} onClick={() => this.setState({ taskRenameInputVisible: true })}>
-                                                                            {selected_task.title}
-                                                                        </span>
-                                                                    )
-                                                            }
+                                                            {taskRenameInputVisible ? (
+                                                                <textarea
+                                                                    className="editableContent-textarea"
+                                                                    draggable={false}
+                                                                    autoFocus
+                                                                    maxLength="255"
+                                                                    defaultValue={selected_task.title}
+                                                                    onBlur={() => this.setState({ taskRenameInputVisible: false })}
+                                                                    onKeyDown={e => {
+                                                                        if (e.keyCode === 13 && e.target.value !== '') {
+                                                                            taskAction.renameTask(selected_task, e.target.value)
+                                                                            this.setState({ taskRenameInputVisible: false })
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <span style={{ display: 'block' }} onClick={() => this.setState({ taskRenameInputVisible: true })}>
+                                                                    {selected_task.title}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -833,45 +867,41 @@ class Main extends Component {
                                         </div>
                                         <div className='steps'>
                                             <div className='steps-inner'>
-                                                {
-                                                    selected_task.steps.slice().sort((a, b) => b.position - a.position).map((step, index) => (
-                                                        <div
-                                                            key={index}
-                                                            id={`step-${index}`}
-                                                            className={`step ${step.completed ? 'completed' : ''}`}
-                                                        >
-                                                            {
-                                                                step.completed ? (
-                                                                    <span className='detailHeader-checkbox checkBox completed' onClick={() => taskAction.changeStepCompleted(selected_task, step)}>
-                                                                        <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
-                                                                    </span>
-                                                                ) : (
-                                                                        <span className='checkBox completed' onClick={() => taskAction.changeStepCompleted(selected_task, step)}>
-                                                                            <i className="icon svgIcon checkbox-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path></svg></i>
-                                                                            <i className="icon svgIcon checkbox-completed-outline-16 checkBox-hover"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fillRule="evenodd"><path d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path><path d="M11.2402 12.792l-1.738-1.749-.709.705 2.443 2.46 3.971-3.957-.706-.708z"></path></g></svg></i>
-                                                                        </span>
-                                                                    )
-                                                            }
-                                                            <div id={`step-body-${index}`} className='step-body'>
-                                                                <div className='step-title'>
-                                                                    <div className='editableContent small'>
-                                                                        <div
-                                                                            id={`editableContent-display-${index}`}
-                                                                            className='editableContent-display'
-                                                                        >
-                                                                            {step.title}
-                                                                        </div>
+                                                {selected_task.steps.slice().sort((a, b) => b.position - a.position).map((step, index) => (
+                                                    <div
+                                                        key={index}
+                                                        id={`step-${index}`}
+                                                        className={`step ${step.completed ? 'completed' : ''}`}
+                                                    >
+                                                        {step.completed ? (
+                                                            <span className='detailHeader-checkbox checkBox completed' onClick={() => taskAction.changeStepCompleted(selected_task, step)}>
+                                                                <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
+                                                            </span>
+                                                        ) : (
+                                                            <span className='checkBox completed' onClick={() => taskAction.changeStepCompleted(selected_task, step)}>
+                                                                <i className="icon svgIcon checkbox-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path></svg></i>
+                                                                <i className="icon svgIcon checkbox-completed-outline-16 checkBox-hover"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fillRule="evenodd"><path d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path><path d="M11.2402 12.792l-1.738-1.749-.709.705 2.443 2.46 3.971-3.957-.706-.708z"></path></g></svg></i>
+                                                            </span>
+                                                        )}
+                                                        <div id={`step-body-${index}`} className='step-body'>
+                                                            <div className='step-title'>
+                                                                <div className='editableContent small'>
+                                                                    <div
+                                                                        id={`editableContent-display-${index}`}
+                                                                        className='editableContent-display'
+                                                                    >
+                                                                        {step.title}
                                                                     </div>
                                                                 </div>
-                                                                <div className='step-delete'>
-                                                                    <button className='stepDelete-icon' onClick={() => taskAction.deleteTaskStep(selected_task, step)}>
-                                                                        <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2170" width=".6rem" height=".6rem"><path d="M877.216 491.808M575.328 510.496 946.784 140.672c17.568-17.504 17.664-45.824 0.192-63.424-17.504-17.632-45.792-17.664-63.36-0.192L512.032 446.944 143.712 77.216C126.304 59.712 97.92 59.648 80.384 77.12 62.848 94.624 62.816 123.008 80.288 140.576l368.224 369.632L77.216 879.808c-17.568 17.504-17.664 45.824-0.192 63.424 8.736 8.8 20.256 13.216 31.776 13.216 11.424 0 22.848-4.352 31.584-13.056l371.36-369.696 371.68 373.088C892.192 955.616 903.68 960 915.168 960c11.456 0 22.912-4.384 31.648-13.088 17.504-17.504 17.568-45.824 0.096-63.392L575.328 510.496 575.328 510.496zM575.328 510.496" p-id="2171" fill="#767678"></path></svg>
-                                                                    </button>
-                                                                </div>
+                                                            </div>
+                                                            <div className='step-delete'>
+                                                                <button className='stepDelete-icon' onClick={() => taskAction.deleteTaskStep(selected_task, step)}>
+                                                                    <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2170" width=".6rem" height=".6rem"><path d="M877.216 491.808M575.328 510.496 946.784 140.672c17.568-17.504 17.664-45.824 0.192-63.424-17.504-17.632-45.792-17.664-63.36-0.192L512.032 446.944 143.712 77.216C126.304 59.712 97.92 59.648 80.384 77.12 62.848 94.624 62.816 123.008 80.288 140.576l368.224 369.632L77.216 879.808c-17.568 17.504-17.664 45.824-0.192 63.424 8.736 8.8 20.256 13.216 31.776 13.216 11.424 0 22.848-4.352 31.584-13.056l371.36-369.696 371.68 373.088C892.192 955.616 903.68 960 915.168 960c11.456 0 22.912-4.384 31.648-13.088 17.504-17.504 17.568-45.824 0.096-63.392L575.328 510.496 575.328 510.496zM575.328 510.496" p-id="2171" fill="#767678"></path></svg>
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                    ))
-                                                }
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className='baseAdd addStep'>
                                                 <button className="baseAdd-icon" type="button">
@@ -1002,59 +1032,52 @@ class Main extends Component {
                                                 </div>
                                             </ContextMenuTrigger>
                                         </div>
-                                        {
-                                            (selected_list.sharing_status && selected_list.sharing_status !== 'NotShare') && (
-                                                <div className='section'>
-                                                    <div className={`section-item ${selected_task.assignment ? 'isSet' : ''}`}>
-                                                        <button className='section-innerClick' onClick={state.changeAssignmentModal}>
-                                                            <div className='section-inner'>
-                                                                <div className='section-icon'>
-                                                                    {
-                                                                        selected_task.assignment ? (
-                                                                            <div className='avatar'>{users.find(u => u.user_id === selected_task.assignment.assignee).username.substring(0, 2)}</div>
-                                                                        ) : <Icon type="user-add" />
-                                                                    }
-                                                                </div>
-                                                                <div className='section-content'>
-                                                                    <div className='section-title'>{selected_task.assignment && users.find(u => u.user_id === selected_task.assignment.assignee) ? users.find(u => u.user_id === selected_task.assignment.assignee).username : '分配给'}</div>
-                                                                </div>
+                                        {(selected_list.sharing_status && selected_list.sharing_status !== 'NotShare') && (
+                                            <div className='section'>
+                                                <div className={`section-item ${selected_task.assignment ? 'isSet' : ''}`}>
+                                                    <button className='section-innerClick' onClick={state.changeAssignmentModal}>
+                                                        <div className='section-inner'>
+                                                            <div className='section-icon'>
+                                                                {
+                                                                    selected_task.assignment ? (
+                                                                        <div className='avatar'>{users.find(u => u.user_id === selected_task.assignment.assignee)?.username.substring(0, 2)}</div>
+                                                                    ) : <Icon type="user-add" />
+                                                                }
                                                             </div>
-                                                        </button>
-                                                        {
-                                                            selected_task.assignment && (
-                                                                <button className="section-delete" title="删除分配人" onClick={() => taskAction.assignTask(selected_task)}>
-                                                                    <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2170" width=".6rem" height=".6rem"><path d="M877.216 491.808M575.328 510.496 946.784 140.672c17.568-17.504 17.664-45.824 0.192-63.424-17.504-17.632-45.792-17.664-63.36-0.192L512.032 446.944 143.712 77.216C126.304 59.712 97.92 59.648 80.384 77.12 62.848 94.624 62.816 123.008 80.288 140.576l368.224 369.632L77.216 879.808c-17.568 17.504-17.664 45.824-0.192 63.424 8.736 8.8 20.256 13.216 31.776 13.216 11.424 0 22.848-4.352 31.584-13.056l371.36-369.696 371.68 373.088C892.192 955.616 903.68 960 915.168 960c11.456 0 22.912-4.384 31.648-13.088 17.504-17.504 17.568-45.824 0.096-63.392L575.328 510.496 575.328 510.496zM575.328 510.496" p-id="2171" fill="#767678"></path></svg>
-                                                                </button>
-                                                            )
-                                                        }
-
-                                                    </div>
-                                                </div>
-                                            )
-                                        }
-                                        <div className='section'>
-                                            {
-                                                selected_task.linkedEntities.map((file, index) => (
-                                                    <a key={index} className="link section-item file-item" rel="noopener noreferrer" id="l-2auvz9rbfqt" href={documentTypes.includes(file.extension)?`https://view.officeapps.live.com/op/view.aspx?src=${file.weblink}`:file.weblink} target="_blank" download={file.display_name}>
-                                                        <div className="thumbnail-wrapper">
-                                                            <div className="thumbnail">{file.extension}</div>
-                                                        </div>
-                                                        <div className="file-content">
-                                                            <div className="file-title">{file.display_name}</div>
-                                                            <div className="file-metadata">
-                                                                <span>{this.bytesToSize(file.preview.size)}</span>
-                                                                <span>{this.mimeTypeTofileName(file.preview.content_type)}</span>
+                                                            <div className='section-content'>
+                                                                <div className='section-title'>{selected_task.assignment && users.find(u => u.user_id === selected_task.assignment.assignee) ? users.find(u => u.user_id === selected_task.assignment.assignee)?.username : '分配给'}</div>
                                                             </div>
                                                         </div>
-                                                        <button className="section-delete" title="删除文件" onClick={e => {
-                                                            e.stopPropagation()
-                                                            taskAction.deleteLinkedEntitity(selected_task, file)
-                                                        }}>
+                                                    </button>
+                                                    {selected_task.assignment && (
+                                                        <button className="section-delete" title="删除分配人" onClick={() => taskAction.assignTask(selected_task)}>
                                                             <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2170" width=".6rem" height=".6rem"><path d="M877.216 491.808M575.328 510.496 946.784 140.672c17.568-17.504 17.664-45.824 0.192-63.424-17.504-17.632-45.792-17.664-63.36-0.192L512.032 446.944 143.712 77.216C126.304 59.712 97.92 59.648 80.384 77.12 62.848 94.624 62.816 123.008 80.288 140.576l368.224 369.632L77.216 879.808c-17.568 17.504-17.664 45.824-0.192 63.424 8.736 8.8 20.256 13.216 31.776 13.216 11.424 0 22.848-4.352 31.584-13.056l371.36-369.696 371.68 373.088C892.192 955.616 903.68 960 915.168 960c11.456 0 22.912-4.384 31.648-13.088 17.504-17.504 17.568-45.824 0.096-63.392L575.328 510.496 575.328 510.496zM575.328 510.496" p-id="2171" fill="#767678"></path></svg>
                                                         </button>
-                                                    </a>
-                                                ))
-                                            }
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className='section'>
+                                            {selected_task.linkedEntities.map((file, index) => (
+                                                <a key={index} className="link section-item file-item" rel="noopener noreferrer" id="l-2auvz9rbfqt" href={documentTypes.includes(file.extension)?`https://view.officeapps.live.com/op/view.aspx?src=${file.weblink}`:file.weblink} target="_blank" download={file.display_name}>
+                                                    <div className="thumbnail-wrapper">
+                                                        <div className="thumbnail">{file.extension}</div>
+                                                    </div>
+                                                    <div className="file-content">
+                                                        <div className="file-title">{file.display_name}</div>
+                                                        <div className="file-metadata">
+                                                            <span>{this.bytesToSize(file.preview.size)}</span>
+                                                            <span>{this.mimeTypeTofileName(file.preview.content_type)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <button className="section-delete" title="删除文件" onClick={e => {
+                                                        e.stopPropagation()
+                                                        taskAction.deleteLinkedEntitity(selected_task, file)
+                                                    }}>
+                                                        <svg viewBox="64 64 896 896" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2170" width=".6rem" height=".6rem"><path d="M877.216 491.808M575.328 510.496 946.784 140.672c17.568-17.504 17.664-45.824 0.192-63.424-17.504-17.632-45.792-17.664-63.36-0.192L512.032 446.944 143.712 77.216C126.304 59.712 97.92 59.648 80.384 77.12 62.848 94.624 62.816 123.008 80.288 140.576l368.224 369.632L77.216 879.808c-17.568 17.504-17.664 45.824-0.192 63.424 8.736 8.8 20.256 13.216 31.776 13.216 11.424 0 22.848-4.352 31.584-13.056l371.36-369.696 371.68 373.088C892.192 955.616 903.68 960 915.168 960c11.456 0 22.912-4.384 31.648-13.088 17.504-17.504 17.568-45.824 0.096-63.392L575.328 510.496 575.328 510.496zM575.328 510.496" p-id="2171" fill="#767678"></path></svg>
+                                                    </button>
+                                                </a>
+                                            ))}
                                             <div className='section-item'>
                                                 <button className='section-innerClick'>
                                                     <div className='section-inner'>
@@ -1117,6 +1140,46 @@ class Main extends Component {
                                                 </div>
                                             </div>
                                         </div>
+                                        {selected_list.sharing_status !== 'NotShare' && (
+                                            <div className='section'>
+                                                <div className='chat-window'>
+                                                    <div className='chat-header'>评论</div>
+                                                    <div className='chat-area'>
+                                                        {selected_task.comments?.map((c, i) => {
+                                                            if (c.user_id === user.user_id) {
+                                                                return (
+                                                                    <div key={i} className='chat-message me'>
+                                                                        <div className='chat-content'>{c.comment}</div>
+                                                                        <div className='chat-avatar'>{c.username?.substring(0, 2)}</div>
+                                                                    </div>
+                                                                )
+                                                            } else {
+                                                                return (
+                                                                    <div key={i} className='chat-message'>
+                                                                        <div className='chat-avatar'>{c.username?.substring(0, 2)}</div>
+                                                                        <div className='chat-content'>{c.comment}</div>
+                                                                    </div>
+                                                                )
+                                                            }
+                                                        })}
+                                                    </div>
+                                                    <div className='chat-submit'>
+                                                        <input
+                                                            ref={ref => this.chatRef = ref}
+                                                            className="chat-input"
+                                                            type="text"
+                                                            placeholder="输入评论"
+                                                            onChange={() => this.setState({ chatButtonDisabled: !this.chatRef.value })}
+                                                        />
+                                                        <Button type='primary' style={{ width: 60 }} disabled={chatButtonDisabled} onClick={() => {
+                                                            taskAction.addComment(this.chatRef.value, JSON.parse(localStorage.user), selected_task)
+                                                            this.chatRef.value = ''
+                                                            this.setState({ chatButtonDisabled: true })
+                                                        }}>提交</Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className='detailFooter'>
                                         <button className='detailFooter-close' onClick={() => this.props.history.push(`/lists/${list_index}`)}>
@@ -1126,9 +1189,9 @@ class Main extends Component {
                                             <span className='date'>
                                                 {
                                                     selected_task.completed ? (
-                                                        `已由 ${users.find(user => user.user_id === selected_task.completed_by).username} 在 ${formatDate(selected_task.completed_at)} 完成`
+                                                        `已由 ${users.find(user => user.user_id === selected_task.completed_by)?.username} 在 ${formatDate(selected_task.completed_at)} 完成`
                                                     ) : (
-                                                        `由 ${users.find(user => user.user_id === selected_task.created_by).username} 创建于 ${formatDate(selected_task.created_at)}`
+                                                        `由 ${users.find(user => user.user_id === selected_task.created_by)?.username} 创建于 ${formatDate(selected_task.created_at)}`
                                                     )
                                                 }
                                             </span>
@@ -1141,24 +1204,7 @@ class Main extends Component {
                             </div>
                         )
                     }
-                    <Drawer
-                        title="设置"
-                        placement="right"
-                        mask={false}
-                        onClose={changeSettingDrawer}
-                        visible={settingDrawerVisible}
-                        getContainer={false}
-                        style={{ position: 'absolute' }}
-                    >
-                        <div className='setting-item'>
-                            <div className='settingItem-header'>从奇妙清单导入</div>
-                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: '10px' }}>
-                                <svg focusable="false" aria-hidden="true" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><path d="M21.7 4.9c-.4-1.2-1.4-2.1-2.5-2.5C18 2 17 2 15 2H9c-2 0-3 0-4.1.3-1.2.5-2.1 1.4-2.6 2.6C2 6 2 7 2 9v6c0 2 0 3 .3 4.1.4 1.2 1.4 2.1 2.5 2.5C6 22 7 22 9 22h6c2 0 3 0 4.1-.3 1.2-.4 2.1-1.4 2.5-2.5.4-1.2.4-2.2.4-4.2V9c0-2 0-3-.3-4.1zm-6.9 10.3l-2.8-2-2.8 2 1.1-3.2-2.8-2h3.4L12 6.8l1.1 3.2h3.4l-2.8 2 1.1 3.2zM20 15c0 1.9 0 2.7-.2 3.5-.2.5-.7 1-1.3 1.3-.8.2-1.6.2-3.5.2H9c-1.9 0-2.7 0-3.5-.2-.5-.2-1-.7-1.3-1.3C4 17.7 4 16.9 4 15V9c0-1.9 0-2.7.2-3.5.2-.5.7-1 1.3-1.3.1 0 .3-.1.4-.1v14.5c0 .2.1.3.3.3l5.7-1.9 5.7 1.9c.2 0 .3-.1.3-.3V4.1c.2 0 .4.1.5.1.5.2 1 .7 1.3 1.3.3.8.3 1.6.3 3.5v6z" fill="#DB4C3F" fillRule="nonzero"></path></svg>
-                                <span>导入列表和任务</span>
-                            </div>
-                            <Button type='primary' onClick={() => window.location.href = `https://www.wunderlist.com/oauth/authorize?client_id=6adde9030ff0b820f884&redirect_uri=http://localhost:3000/&state=${Math.random()}`}>导入</Button>
-                        </div>
-                    </Drawer>
+                    <SettingDrawer/>
                     <AccountDrawer/>
                 </div>
                 <ContextMenu setListRenameVisible={() => this.setState({ listRenameInputVisible: true })} listMenu_obj={selected_list} taskMenu_obj={selected_task || {}} />

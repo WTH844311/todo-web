@@ -75,7 +75,7 @@ class data {
             title: '已分配给你',
             icon: <Icon type="user" />,
             defaultList: true,
-            sharing_status: 'NotShare',
+            sharing_status: 'Open',
             sort_type: -1,
             show_completed: this.assign_showCompleted,
             theme: 'green',
@@ -93,12 +93,13 @@ class data {
             sort_asc: this.inboxSortASC,
             show_completed: this.inbox_showCompleted,
             theme: 'skyblue',
-            tasks: this.tasks.filter(task => task.list_id === 'inbox' || task.list_id === '000000000000000000000000')
+            tasks: this.tasks.filter(task => task.list_id === '000000000000000000000000')
         }
     }
 
     wsAction = {
         initWs: async () => {
+            if (this.ws !== null) return
             if (!localStorage.user) return
             const user_id = JSON.parse(localStorage.user).user_id
             this.ws = new WebSocket(wsDomain)
@@ -143,7 +144,6 @@ class data {
             } catch(e){
                 json = {};
             }
-            // console.log(json)
             switch (json.type) {
                 case 'pong':
                     console.log(`[${new Date().toTimeString()}] [connectivity] Connection is OK`)
@@ -207,27 +207,21 @@ class data {
     }
 
     setChange = async (change_type, target_type, target) => {
-        if (this.ws === null) return this.wsAction.initWs()
         const now = Date.now()
-        if (this.ws.readyState === this.ws.OPEN) {
-            this.ws.send(JSON.stringify({
-                type: 'update',
-                data: [{
-                    change_type,
-                    target_type,
-                    target,
-                    time: now,
-                    ws_id: this.ws.id
-                }]
-            }))
-        }
-        await db.insert('changes', {
+        const data = {
             change_type,
             target_type,
             target,
             time: now,
-            ws_id: this.ws.id
-        })
+            ws_id: this.ws !== null ? this.ws.id : now
+        }
+        await db.insert('changes', data)
+        if (this.ws !== null && this.ws.readyState === this.ws.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'update',
+                data: [data]
+            }))
+        }
     }
 
     listAction = {
@@ -640,6 +634,22 @@ class data {
             await this.taskAction.getTasks()
             await this.listAction.getLists()
         },
+
+        addComment: async (text, { user_id, username }, task) => {
+            task.comments = [
+                ...(task.comments || []),
+                {
+                    comment: text,
+                    user_id,
+                    username,
+                    submit_at: new Date().toISOString()
+                }
+            ]
+            await db.update('tasks', JSON.parse(JSON.stringify(task)))
+            await this.setChange('update', 'task', JSON.stringify(task))
+            await this.taskAction.getTasks()
+            await this.listAction.getLists()
+        },
     
         deleteTask: async task_id => {
             await db.delete('tasks', task_id)
@@ -767,7 +777,7 @@ class data {
             await this.taskAction.getTasks()
             await this.listAction.getLists()
         },
-    
+
         deleteTaskStep: async (task, step) => {
             task.steps = task.steps.filter(s => JSON.stringify(s) !== JSON.stringify(step) )
             await db.update('tasks', JSON.parse(JSON.stringify(task)))
@@ -1000,7 +1010,7 @@ class data {
                 position: 0,
                 today_position: 0
             }
-            await db.insert('tasks', JSON.parser(JSON.stringify(newTask)))
+            await db.insert('tasks', JSON.parse(JSON.stringify(newTask)))
             await this.setChange('add', 'task', JSON.stringify(task))
             await this.taskAction.getTasks()
             await this.listAction.getLists()
@@ -1086,6 +1096,64 @@ class data {
         const { code, data } = res.data
         if (code === 1) this.users = data
     }
+
+    import = async ({ lists, tasks }) => {
+        this.lists.slice().sort((a, b) => a.position-b.position).map(async (l, index) => {
+            await db.update('lists', {
+                ...JSON.parse(JSON.stringify(l)),
+                position: (index + lists.length) * 4096000
+            })
+            await this.setChange('update', 'list', JSON.stringify({
+                ...l,
+                position: (index + lists.length) * 4096000
+            }))
+        })
+        lists.map(async (list, index) => {
+            const newListId = mongoose.Types.ObjectId()
+            tasks.map(async task => {
+                if (task.list_id !== list._id) return
+                const taskId = mongoose.Types.ObjectId()
+                task = {
+                    ...task,
+                    local_id: taskId.toHexString(),
+                    _id: taskId.toHexString(),
+                    list_id: newListId.toHexString(),
+                    position: 0
+                }
+                await db.insert('tasks', task)
+                await this.setChange('add', 'task', JSON.stringify(task))
+            })
+            list = {
+                ...list,
+                local_id: newListId.toHexString(),
+                _id: newListId.toHexString(),
+                position: index * 4096000
+            }
+            await db.insert('lists', list)
+            await this.setChange('add', 'list', JSON.stringify(list))
+        })
+        await this.taskAction.getTasks()
+        await this.listAction.getLists()
+    }
+
+    swapListPosition = async (a, b) => {
+        [a.position, b.position] = [b.position, a.position]
+        await db.update('lists', JSON.parse(JSON.stringify(a)))
+        await db.update('lists', JSON.parse(JSON.stringify(b)))
+        await this.setChange('update', 'list', JSON.stringify(a))
+        await this.setChange('update', 'list', JSON.stringify(b))
+        await this.listAction.getLists()
+    }
+
+    swapTaskPosition = async (a, b) => {
+        [a.position, b.position] = [b.position, a.position]
+        await db.update('tasks', JSON.parse(JSON.stringify(a)))
+        await db.update('tasks', JSON.parse(JSON.stringify(b)))
+        await this.setChange('update', 'task', JSON.stringify(a))
+        await this.setChange('update', 'task', JSON.stringify(b))
+        await this.taskAction.getTasks()
+        await this.listAction.getLists()
+    }
 }
 
 decorate(data, {
@@ -1136,6 +1204,7 @@ decorate(data, {
     changeTaskImportance: action,
     changeTaskMyday: action,
     addTaskStep: action,
+    addComment: action,
     deleteTaskStep: action,
     changeStepCompleted: action,
     renameTask: action,
@@ -1154,7 +1223,10 @@ decorate(data, {
     createNewListByTask: action,
     moveTaskToList: action,
     cloneTaskToList: action,
-    getUsers: action
+    getUsers: action,
+    import: action,
+    swapListPosition: action,
+    swapTaskPosition: action
 })
 
 
