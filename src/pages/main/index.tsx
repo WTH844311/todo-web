@@ -4,9 +4,9 @@ import './styles/leftColumn.css'
 import './styles/main.css'
 import './styles/rightColumn.css'
 import './styles/theme.css'
-import React, { Component } from 'react'
+import React, { Component, DOMAttributes, LegacyRef } from 'react'
 import { observer, inject } from 'mobx-react'
-import { withRouter } from 'react-router-dom'
+import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { Icon, message, Button } from 'antd'
 import { ContextMenuTrigger } from "react-contextmenu"
 import ContextMenu from './components/contextMenu/index'
@@ -18,14 +18,23 @@ import SettingDrawer from './components/settingDrawer/index'
 import { arraysEqual, formatDate } from '../../common/util'
 import getIcon from '../../common/icons'
 import db from '../../common/db'
+import { IState, IProps } from './type'
+import { IList, IReminder, ITask } from '../../stores/types'
 
 const documentTypes = ['DOC', 'DOCX', 'WPS', 'XML', 'CSV', 'XLS', 'XLSM', 'PPT', 'PPTX', 'PPTM', 'XPS']
 
-class Main extends Component {
+class Main extends Component<IProps, IState> {
 
-    constructor(props) {
+    private reminderTimer: NodeJS.Timeout | null = null;    
+
+    private fromTask: ITask | null = null;
+
+    private fromList: IList | null = null;
+
+    private chatRef: LegacyRef | null = null;
+
+    constructor(props: IProps) {
         super(props)
-        this.reminderTimer = null
         this.state = {
             leftColumnEnter: true,
             listRenameInputVisible: false,
@@ -47,13 +56,23 @@ class Main extends Component {
      * 5. 其他
      */
     componentDidMount() {
-        const { wsAction, getUsers, listAction, taskAction, users, ws } = this.props.data
+        const { wsAction, getAction, setAction, users, ws, user } = this.props.data
         if (!localStorage.token || !localStorage.user) return this.props.history.push('/user/login')
-        if (users.length === 0) getUsers()
+        if (!localStorage.setting) {
+            localStorage.setting = JSON.stringify({
+                sound: true
+            })
+        }
+        if (!user) setAction.setUser()
+        if (users.length === 0) getAction.getUsers()
         db.initDB().then(async ok => {
             if (ok === true) {
-                await taskAction.getTasks()
-                await listAction.getLists()
+                /**
+                 * initWs 是一个耗时操作，故在调用之前先获取本地数据库的数据，提高用户体验
+                 * @todo 目前的问题：initWs完成前，用户无法进行数据操作
+                 */
+                await getAction.getTasks()
+                await getAction.getLists()
                 if (!ws) wsAction.initWs()
             }
         })
@@ -62,13 +81,13 @@ class Main extends Component {
         this.handleWunderlistImport()
     }
 
-    componentDidUpdate(prevProps, prevState) {
+    componentDidUpdate(prevProps: Readonly<IProps>, prevState: Readonly<IState>) {
         const { tasks } = this.props.data
         if (prevState.searchValue !== this.state.searchValue) {
             if (!this.state.searchValue) {
                 this.setState({ searchData: null })
             } else {
-                let result = {
+                const result = {
                     tasks: tasks.filter(t => t.title.includes(this.state.searchValue)),
                     note: tasks.filter(t => t.note && t.note.includes(this.state.searchValue)),
                     step: tasks.filter(t => t.steps && t.steps.length > 0 && t.steps.find(s => s.title.includes(this.state.searchValue)))
@@ -80,18 +99,24 @@ class Main extends Component {
 
     componentWillUnmount() {
         window.removeEventListener('click', this.handleClick)
-        this.reminderTimer = null
+        if (this.reminderTimer) {
+            clearInterval(this.reminderTimer)
+        }
     }
 
+    /**
+     * @deprecated Wunderlist 服务器已被关闭，api失效
+     */
     handleWunderlistImport = () => {
-        const urlParams = new URLSearchParams(this.props.location.search)
-        const code = urlParams.get('code')
-        if (code) this.props.data.importFromWunderlist(code)
+        // const urlParams = new URLSearchParams(this.props.location.search)
+        // const code = urlParams.get('code')
+        // if (code) this.props.data.importFromWunderlist(code)
     }
 
     processReminderTask = () => {
-        if (this.props.data.tasks.length > 0) {
-            this.props.data.tasks.map(t => {
+        const { data } = this.props
+        if (data.tasks.length > 0) {
+            data.tasks.map(t => {
                 if (!t.completed && (t.reminder && t.reminder.date)) {
                     const time = Date.now() - new Date(t.reminder.date).getTime()
                     if (time < 60 * 1000 && time > 0) {
@@ -102,33 +127,35 @@ class Main extends Component {
         }
     }
 
-    handleClick = e => {
+    // 全局 click 事件拦截
+    handleClick = (e: MouseEvent) => {
+        const target = e.target as HTMLDivElement;
         switch (true) {
-            case e.target.classList.contains('step-title') || e.target.classList.contains('editableContent-display') || e.target.classList.contains('step'):
+            case target.classList.contains('step-title') || target.classList.contains('editableContent-display') || target.classList.contains('step'):
                 const list = document.getElementsByClassName('step')
                 for (var i = 0; i < list.length; i++) {
                     list[i].classList.remove('selected')
                 }
-                const index = +e.target.id.charAt(e.target.id.length - 1)
-                document.getElementById(`step-${index}`).classList.add('selected')
+                const index = +target.id.charAt(target.id.length - 1)
+                document.getElementById(`step-${index}`)?.classList.add('selected')
                 break
         }
     }
 
-    setReminderList = list => this.setState({ reminderList: list })
-
-    setListIndex = newIndex => this.props.history.push(`/lists/${newIndex}`)
+    setReminderList = (list: IReminder[]) => this.setState({ reminderList: list })
+    
+    setListIndex = (newIndex: string) => this.props.history.push(`/lists/${newIndex}`)
 
     changeColumnState = () => this.setState({ leftColumnEnter: !this.state.leftColumnEnter })
 
-    bytesToSize = bytes => {
+    bytesToSize = (bytes: number) => {
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         if (bytes === 0) return '0 Byte';
-        const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-        return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
     }
 
-    mimeTypeTofileName = type => {
+    mimeTypeTofileName = (type: string) => {
         switch (true) {
             case type.includes('image'):
                 return '图片'
@@ -166,7 +193,8 @@ class Main extends Component {
             inbox,
             lists,
             tasks,
-            users
+            users,
+            user
         } = data
         const {
             changeAccountDrawer,
@@ -174,187 +202,92 @@ class Main extends Component {
             changeShareOptionModal
         } = state
         if (!users) return null
-        if (!localStorage.user) return null
-        const user = JSON.parse(localStorage.user)
         const defaultList = [myday, important, planned, assigned_to_me, inbox]
         const { list_index, task_id } = this.props.match.params
         const selected_task = tasks.find(task => task.local_id === task_id)
         const selected_list = defaultList.find(l => l._id === list_index)
-            ? data[list_index]
+            ? (data as any)[list_index]
             : lists.find(l => l.local_id === list_index) || inbox
         const interval = () => {
-            if (selected_task.recurrence) {
+            if (selected_task?.recurrence) {
                 const { interval, type } = selected_task.recurrence
-                return {
+                return ({
                     Daily: `每${interval > 1 ? ` ${interval} ` : ''}天`,
                     Weekly: `每${interval > 1 ? ` ${interval} ` : ''}周`,
                     Monthly: `每${interval > 1 ? ` ${interval} 个` : ''}月`,
                     Yearly: `每${interval > 1 ? ` ${interval} ` : ''}年`
-                }[type]
+                } as any)[type]
             }
             return '重复'
         }
         const daysOfWeek = () => {
-            if (selected_task.recurrence && selected_task.recurrence.days_of_week.length > 0) {
+            if (selected_task?.recurrence && selected_task?.recurrence.days_of_week.length > 0) {
                 if (arraysEqual(selected_task.recurrence.days_of_week, ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) && selected_task.recurrence.type === 'Weekly') return ['工作日']
                 const o = { Monday: '星期一', Tuesday: '星期二', Wednesday: '星期三', Thursday: '星期四', Friday: '星期五', Saturday: '星期六', Sunday: '星期日' }
-                return selected_task.recurrence.days_of_week.map(d => d = o[d])
+                return selected_task.recurrence.days_of_week.map(d => d = (o as any)[d])
             }
             return []
         }
         const sortType = () => {
-            let o = { 1: '重要性', 2: '截止日期', 3: '是否添加到 “我的一天”', 4: '完成状态', 5: '字母顺序', 6: '创建日期' }
-            return o[selected_list.sort_type]
+            const o = { 1: '重要性', 2: '截止日期', 3: '是否添加到 “我的一天”', 4: '完成状态', 5: '字母顺序', 6: '创建日期' }
+            return (o as any)[selected_list.sort_type]
         }
         const getSortedList = () => {
-            if (selected_list.defaultList && selected_list._id !== 'myday' && selected_list._id !== 'inbox') return selected_list.tasks
-            switch (selected_list.sort_type) {
+            const { tasks, sort_asc, sort_type, defaultList, _id }: IList = selected_list
+            if (!tasks) return []
+            if (defaultList && _id !== 'myday' && _id !== 'inbox') return tasks
+            const getSortIndex = _id === 'myday' ? 'today_position' : 'position'
+            switch (sort_type) {
                 case 0:
-                    if (selected_list._id === 'myday') {
-                        return selected_list.tasks.slice().sort((a, b) => b.today_position - a.today_position)
-                    } else {
-                        return selected_list.tasks.slice().sort((a, b) => b.position - a.position)
-                    }
+                    return tasks.slice().sort((a, b) => b[getSortIndex] - a[getSortIndex])
                 case 1:
                     // 重要性: 重要性权重最高
-                    if (selected_list.sort_asc) {
-                        return [
-                            ...selected_list.tasks.filter(l => l.importance).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => !l.importance).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    } else {
-                        return [
-                            ...selected_list.tasks.filter(l => !l.importance).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => l.importance).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    }
+                    return [
+                        ...tasks.filter(t => sort_asc ? t.importance:!t.importance).sort((a, b) => b[getSortIndex] - a[getSortIndex]),
+                        ...tasks.filter(t => sort_asc ? !t.importance:t.importance).sort((a, b) => b[getSortIndex] - a[getSortIndex])
+                    ]
                 case 2:
                     // 截止日期：设置截止日期的未完成的 > 未设置截止日期的未完成的 > 设置截止日期的已完成的 > 未设置截止日期的已完成的，截止日期相同完成属性相同的，看 position 或 today_position
-                    if (selected_list.sort_asc) {
-                        return [
-                            // 设置截止日期的未完成的
-                            ...selected_list.tasks.filter(l => !l.completed && l.due_date).sort((a, b) => {
-                                if (new Date(a.due_date).getTime() !== new Date(b.due_date).getTime()) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-
-                            }),
-                            // 未设置截止日期的未完成的
-                            ...selected_list.tasks.filter(l => !l.completed && !l.due_date).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            // 设置截止日期的已完成的
-                            ...selected_list.tasks.filter(l => l.completed && l.due_date).sort((a, b) => {
-                                if (new Date(a.due_date).getTime() !== new Date(b.due_date).getTime()) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            // 未设置截止日期的已完成的
-                            ...selected_list.tasks.filter(l => l.completed && !l.due_date).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    } else {
-                        return [
-                            ...selected_list.tasks.filter(l => !l.completed && l.due_date).sort((a, b) => {
-                                if (new Date(a.due_date).getTime() !== new Date(b.due_date).getTime()) return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-
-                            }),
-                            ...selected_list.tasks.filter(l => !l.completed && !l.due_date).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => l.completed && l.due_date).sort((a, b) => {
-                                if (new Date(a.due_date).getTime() !== new Date(b.due_date).getTime()) return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => l.completed && !l.due_date).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    }
+                    return [
+                        // 设置截止日期的未完成的
+                        ...tasks.filter(t => !t.completed && t.due_date).sort((a, b) => {
+                            const a_due_date = new Date(a.due_date).getTime(), b_due_date = new Date(b.due_date).getTime()
+                            if (a_due_date !== b_due_date) return sort_asc ? a_due_date - b_due_date : b_due_date - a_due_date
+                            return b[getSortIndex] - a[getSortIndex]
+                        }),
+                        // 未设置截止日期的未完成的
+                        ...tasks.filter(t => !t.completed && !t.due_date).sort((a, b) => b[getSortIndex] - a[getSortIndex]),
+                        // 设置截止日期的已完成的
+                        ...tasks.filter(t => t.completed && t.due_date).sort((a, b) => {
+                            const a_due_date = new Date(a.due_date).getTime(), b_due_date = new Date(b.due_date).getTime()
+                            if (a_due_date !== b_due_date) return sort_asc ? a_due_date - b_due_date : b_due_date - a_due_date
+                            return b[getSortIndex] - a[getSortIndex]
+                        }),
+                        // 未设置截止日期的已完成的
+                        ...tasks.filter(t => t.completed && !t.due_date).sort((a, b) => b[getSortIndex] - a[getSortIndex])
+                    ]
                 case 3:
                     // 已添加到我的一天：已添加到我的一天 > 未添加到我的一天，其次看 position 或 today_position
-                    if (selected_list.sort_asc) {
-                        return [
-                            ...selected_list.tasks.filter(l => l.myDay).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => !l.myDay).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    } else {
-                        return [
-                            ...selected_list.tasks.filter(l => !l.myDay).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => l.myDay).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    }
+                    return [
+                        ...tasks.filter(t => sort_asc ? t.myDay : !t.myDay).sort((a, b) => b[getSortIndex] - a[getSortIndex]),
+                        ...tasks.filter(t => sort_asc ? !t.myDay : t.myDay).sort((a, b) => b[getSortIndex] - a[getSortIndex])
+                    ]
                 case 4:
                     // 已完成
-                    if (selected_list.sort_asc) {
-                        return [
-                            ...selected_list.tasks.filter(l => !l.completed).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => l.completed).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    } else {
-                        return [
-                            ...selected_list.tasks.filter(l => l.completed).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            }),
-                            ...selected_list.tasks.filter(l => !l.completed).sort((a, b) => {
-                                if (selected_list._id === 'myday') return b.today_position - a.today_position
-                                return b.position - a.position
-                            })
-                        ]
-                    }
+                    return [
+                        ...tasks.filter(t => sort_asc ? !t.completed : t.completed).sort((a, b) => b[getSortIndex] - a[getSortIndex]),
+                        ...tasks.filter(t => sort_asc ? t.completed : !t.completed).sort((a, b) => b[getSortIndex] - a[getSortIndex])
+                    ]
                 // case 5:
                 //     // 字母顺序：数字按第一位数字顺序排列，字母按字母顺序，汉字按拼音首字母顺序
                 //     break
                 case 6:
                     // 创建日期: 越新的任务权重越高
-                    if (selected_list.sort_asc) {
-                        return selected_list.tasks.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                    } else {
-                        return selected_list.tasks.slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-                    }
+                    return tasks.slice().sort((a, b) => sort_asc ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime() : new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             }
         }
 
-        const TaskItem = (task, index) => (
+        const TaskItem = (task: ITask, index: number) => (
             <div id={`taskItem-${index}`} key={task.local_id} className={`taskItem ${task.completed && 'completed'}`}
                 onClick={() => this.props.history.push(`/lists/${list_index}/tasks/${task.local_id}`)}
                 onMouseDown={e => {
@@ -364,10 +297,14 @@ class Main extends Component {
                 onDragStart={() => this.fromTask = task}
                 onDragOver={e => e.preventDefault()}
                 onDragEnd={() => this.fromTask = null}
-                onDrop={() => data.swapTaskPosition(this.fromTask, task)}
+                onDrop={() => data.taskAction.swapTaskPosition(this.fromTask, task)}
             >
                 <div className='taskItem-body'>
-                    <span className="checkBox big" title={`${task.title} 标记为已完成`} onClick={() => taskAction.changeTaskCompleted(task)}>
+                    <span className="checkBox big" title={`${task.title} 标记为已完成`} onClick={() => {
+                        const { sound } = JSON.parse(localStorage.setting)
+                        if (!task.completed && sound) new Audio('/res/audio/done.wav').play()
+                        taskAction.changeTaskCompleted(task)
+                    }}>
                         {task.completed ? (
                             <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
                         ) : (
@@ -388,7 +325,7 @@ class Main extends Component {
                                 for (var i = 0; i < list.length; i++) {
                                     list[i].classList.remove('selected')
                                 }
-                                document.getElementById(`taskItem-${index}`).classList.add('selected')
+                                document.getElementById(`taskItem-${index}`)?.classList.add('selected')
                             }}>
                                 <span className='taskItem-title'>{task.title}</span>
                                 <div className='metaDataInfo'>
@@ -400,7 +337,7 @@ class Main extends Component {
                                                         task.list_id === '000000000000000000000000'
                                                             ? '任务'
                                                             : lists.find(l => l.local_id === task.list_id)
-                                                                ? lists.find(l => l.local_id === task.list_id).title
+                                                                ? lists.find(l => l.local_id === task.list_id)?.title
                                                                 : 1
                                                     }
                                                 </span>
@@ -415,7 +352,7 @@ class Main extends Component {
                                             </span>
                                         </span>
                                     )}
-                                    {task.steps.length > 0 && (
+                                    {task.steps?.length !== undefined && task.steps.length > 0 && (
                                         <span className='metaDataInfo-group'>
                                             <span className='taskItemInfo-steps'>
                                                 <span className="taskItemInfo-label">第 {task.steps.filter(step => step.completed).length} 步，共 {task.steps.length} 步</span>
@@ -427,13 +364,11 @@ class Main extends Component {
                                             <span className={`taskItemInfo-date ${task.completed ? 'inactive' : new Date(task.due_date).getTime() < new Date().setHours(0, 0, 0, 0) ? 'overdue' : 'active'}`}>
                                                 <i className="icon svgIcon due-date-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fillRule="evenodd" d="M10 3v1H5.999V3H5v1H3v9h10V4h-2V3h-1zm1 3V5h1v2H4V5h1v1h.999V5H10v1h1zm-7 6h8V7.999H4V12z"></path></svg></i>
                                                 <span className="taskItemInfo-label">
-                                                    {
-                                                        new Date(task.due_date).getTime() < new Date().setHours(0, 0, 0, 0) ? (
-                                                            `过期时间: ${new Date().getFullYear() === new Date(task.due_date).getFullYear() ? formatDate(task.due_date, 'Year') : formatDate(task.due_date)}`
-                                                        ) : (
-                                                            `${new Date().getFullYear() === new Date(task.due_date).getFullYear() ? formatDate(task.due_date, 'Year') : formatDate(task.due_date)} 到期`
-                                                        )
-                                                    }
+                                                    {new Date(task.due_date).getTime() < new Date().setHours(0, 0, 0, 0) ? (
+                                                        `过期时间: ${new Date().getFullYear() === new Date(task.due_date).getFullYear() ? formatDate(task.due_date, 'Year') : formatDate(task.due_date)}`
+                                                    ) : (
+                                                        `${new Date().getFullYear() === new Date(task.due_date).getFullYear() ? formatDate(task.due_date, 'Year') : formatDate(task.due_date)} 到期`
+                                                    )}
                                                 </span>
                                                 {task.recurrence && <i className="icon svgIcon recurring-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fillRule="evenodd" d="M10.7998 10.73c.67-.75.99-1.71.93-2.73h1c.07 1.24-.36 2.46-1.17 3.39-.9 1.02-2.2 1.61-3.57 1.61-1.657 0-3.136-.849-3.99-2.186V12h-1V9h3v1h-1.319c.635 1.22 1.889 2 3.309 2 1.08 0 2.11-.46 2.81-1.27zM12 4h1v3h-3V6h1.306C10.663 4.78 9.399 4 8 4c-1.074 0-2.096.458-2.805 1.257-.671.757-.981 1.724-.92 2.743h-.994c-.056-1.252.343-2.478 1.166-3.406C5.346 3.581 6.641 3 8 3c1.64 0 3.138.842 4 2.191V4z"></path></svg></i>}
                                             </span>
@@ -453,7 +388,7 @@ class Main extends Component {
                                             )}
                                         </span>
                                     )}
-                                    {task.linkedEntities.length > 0 && (
+                                    {task.linkedEntities?.length !== undefined && task.linkedEntities.length > 0 && (
                                         <span className='metaDataInfo-group'>
                                             <span className="taskItemInfo-attachments">
                                                 <i className="icon svgIcon attachment-16"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M6 11.5c0 .2761424-.22385763.5-.5.5-.27614237 0-.5-.2238576-.5-.5V6c0-1.65714237 1.34285763-3 3-3s3 1.34285763 3 3v5c0 1.1041424-.8958576 2-2 2-1.10414237 0-2-.8958576-2-2V6.5c0-.27614237.22385763-.5.5-.5.27614237 0 .5.22385763.5.5V11c0 .5518576.44814237 1 1 1s1-.4481424 1-1V6c0-1.10485763-.89514237-2-2-2-1.10485763 0-2 .89514237-2 2v5.5z" fill='#767678'></path></svg></i>
@@ -461,11 +396,16 @@ class Main extends Component {
                                             </span>
                                         </span>
                                     )}
+                                    {task.comments?.length !== undefined && task.comments.length > 0 && (
+                                        <span className='metaDataInfo-group'>
+                                            {getIcon({ name: 'message', size: '.9rem' })}
+                                        </span>
+                                    )}
                                 </div>
                             </button>
                         </ContextMenuTrigger>
                     </div>
-                    {task.assignment && users.find(u => u.user_id === task.assignment.assignee) && <div className='avatar'>{users.find(u => u.user_id === task.assignment.assignee)?.username.substring(0, 2)}</div>}
+                    {task.assignment && users.find(u => u.user_id === task.assignment?.assignee) && <div className='avatar'>{users.find(u => u.user_id === task.assignment?.assignee)?.username.substring(0, 2)}</div>}
                     <span className='importanceButton' onClick={() => taskAction.changeTaskImportance(task)}>
                         {task.importance ? getIcon({ name: 'important' }) : getIcon({ name: 'unimportant' })}
                     </span>
@@ -558,7 +498,7 @@ class Main extends Component {
                                                         <div className={`listItem color-${list.theme}`}>
                                                             <div className='listItem-icon'><Icon type="home" /></div>
                                                             <div className="listItem-title"><span>{list.title}</span></div>
-                                                            <div className="listItem-count"><span>{inbox.tasks.filter(t => !t.completed).length || null}</span></div>
+                                                            <div className="listItem-count"><span>{inbox.tasks?.filter(t => !t.completed).length || null}</span></div>
                                                         </div>
                                                     </li>
                                                 </ContextMenuTrigger>
@@ -575,7 +515,8 @@ class Main extends Component {
                                                         } else if (list._id === 'important' && !this.fromTask.importance) {
                                                             data.taskAction.changeTaskImportance(this.fromTask)
                                                         } else if (selected_list.sharing_status !== 'NotShare' && list._id === 'assigned_to_me') {
-                                                            data.taskAction.assignTask(this.fromTask, user.user_id, user.user_id)
+                                                            const { user_id }: any = user
+                                                            data.taskAction.assignTask(this.fromTask, user_id, user_id)
                                                         }
                                                     }
                                                 }}
@@ -584,7 +525,7 @@ class Main extends Component {
                                                 <div className={`listItem color-${list.theme}`}>
                                                     <div className='listItem-icon'>{list.icon}</div>
                                                     <div className="listItem-title"><span>{list.title}</span></div>
-                                                    <div className="listItem-count"><span>{list.tasks.filter(t => !t.completed).length || null}</span></div>
+                                                    <div className="listItem-count"><span>{list.tasks?.filter(t => !t.completed).length || null}</span></div>
                                                 </div>
                                             </li>
                                         })}
@@ -604,7 +545,7 @@ class Main extends Component {
                                                             onDragOver={e => e.preventDefault()}
                                                             onDrop={() => {
                                                                 if (this.fromList) {
-                                                                    data.swapListPosition(this.fromList, list)
+                                                                    data.listAction.swapListPosition(this.fromList, list)
                                                                 } else {
                                                                     data.taskAction.moveTaskToList(this.fromTask, list._id)
                                                                 }
@@ -645,13 +586,14 @@ class Main extends Component {
                                             id="baseAddInput-addList"
                                             className="baseAdd-input chromeless"
                                             type="text"
-                                            maxLength="255"
+                                            maxLength={255}
                                             placeholder="新建清单"
-                                            tabIndex="-1"
+                                            tabIndex={-1}
                                             onKeyDown={e => {
-                                                if (e.keyCode === 13 && e.target.value !== '') {
-                                                    listAction.addList(e.target.value)
-                                                    e.target.value = ''
+                                                const target = e.target as HTMLInputElement;
+                                                if (e.keyCode === 13 && target.value !== '') {
+                                                    listAction.addList(target.value)
+                                                    target.value = ''
                                                 }
                                             }}
                                         />
@@ -671,20 +613,21 @@ class Main extends Component {
                                                     <input
                                                         className="chromeless editing tasksToolbar-input"
                                                         type="text"
-                                                        size="3"
-                                                        maxLength="255"
+                                                        size={3}
+                                                        maxLength={255}
                                                         autoFocus
                                                         defaultValue={selected_list.title}
                                                         onBlur={() => this.setState({ listRenameInputVisible: false })}
                                                         onKeyDown={e => {
-                                                            if (e.keyCode === 13 && e.target.value !== '') {
-                                                                listAction.renameList(selected_list, e.target.value)
+                                                            const target = e.target as HTMLInputElement;
+                                                            if (e.keyCode === 13 && target.value !== '') {
+                                                                listAction.renameList(selected_list, target.value)
                                                                 this.setState({ listRenameInputVisible: false })
                                                             }
                                                         }}
                                                     />
                                                 ) : (
-                                                        <h2 className='listTitle' style={searchData ? { color: 'blue' } : null} onClick={() => {
+                                                        <h2 className='listTitle' style={searchData ? { color: 'blue' } : undefined} onClick={() => {
                                                             if (!selected_list.defaultList) this.setState({ listRenameInputVisible: true })
                                                         }}>
                                                             {searchData ? `正在搜索 “${searchValue}”` : selected_list.title}
@@ -738,7 +681,7 @@ class Main extends Component {
                                         <div className="sortingIndicator-inner">
                                             <div className="sortingIndicator-active">
                                                 按{sortType()}排列
-                                                <button className="sortingIndicator-toggle center" tabIndex="0" onClick={() => listAction.changeListSortAsc(selected_list)}>
+                                                <button className="sortingIndicator-toggle center" tabIndex={0} onClick={() => listAction.changeListSortAsc(selected_list)}>
                                                     {selected_list.sort_asc ? getIcon({ name: 'Up' }) : getIcon({ name: 'Down' })}
                                                 </button>
                                             </div>
@@ -782,7 +725,7 @@ class Main extends Component {
                                                 <div className='chunkedComponentList sticky'>
                                                     <div className='chunkedScrollContainer'>
                                                         <div className='componentList space-aside'>
-                                                            {getSortedList().filter(t => !t.completed || selected_list.show_completed).map((task, index) => TaskItem(task, index))}
+                                                            {getSortedList()?.filter(t => !t.completed || selected_list.show_completed).map((task, index) => TaskItem(task, index))}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -796,13 +739,14 @@ class Main extends Component {
                                                         id="baseAddInput-addTask"
                                                         className="baseAdd-input chromeless"
                                                         type="text"
-                                                        maxLength="255"
+                                                        maxLength={255}
                                                         placeholder={`添加${list_index === 'planned' ? '一个今天到期的' : ''}任务`}
-                                                        tabIndex="-1"
+                                                        tabIndex={-1}
                                                         onKeyDown={e => {
-                                                            if (e.keyCode === 13 && e.target.value !== '') {
-                                                                taskAction.addTask(list_index, e.target.value)
-                                                                e.target.value = ''
+                                                            const target = e.target as HTMLInputElement;
+                                                            if (e.keyCode === 13 && target.value !== '') {
+                                                                taskAction.addTask(list_index, target.value)
+                                                                target.value = ''
                                                             }
                                                         }}
                                                     />
@@ -829,7 +773,11 @@ class Main extends Component {
                                                         <i className="icon svgIcon checkbox-completed-20"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.9854 15.0752l-3.546-3.58 1.066-1.056 2.486 2.509 4.509-4.509 1.06 1.061-5.575 5.575zm1.015-12.075c-4.963 0-9 4.037-9 9s4.037 9 9 9 9-4.037 9-9-4.037-9-9-9z"></path></svg></i>
                                                     </span>
                                                 ) : (
-                                                    <span className='checkBox completed' onClick={() => taskAction.changeTaskCompleted(selected_task)}>
+                                                    <span className='checkBox completed' onClick={() => {
+                                                        const { sound } = JSON.parse(localStorage.setting)
+                                                        if (!selected_task.completed && sound) new Audio('/res/audio/done.wav').play()
+                                                        taskAction.changeTaskCompleted(selected_task)
+                                                    }}>
                                                         <i className="icon svgIcon checkbox-16"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="2 0 24 24"><path fillRule="evenodd" d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path></svg></i>
                                                         <i className="icon svgIcon checkbox-completed-outline-16 checkBox-hover"><svg focusable="false" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="4 2 24 24"><g fillRule="evenodd"><path d="M6 12c0-3.309 2.691-6 6-6s6 2.691 6 6-2.691 6-6 6-6-2.691-6-6zm-1 0c0 3.859 3.141 7 7 7s7-3.141 7-7-3.141-7-7-7-7 3.141-7 7z"></path><path d="M11.2402 12.792l-1.738-1.749-.709.705 2.443 2.46 3.971-3.957-.706-.708z"></path></g></svg></i>
                                                     </span>
@@ -842,12 +790,13 @@ class Main extends Component {
                                                                     className="editableContent-textarea"
                                                                     draggable={false}
                                                                     autoFocus
-                                                                    maxLength="255"
+                                                                    maxLength={255}
                                                                     defaultValue={selected_task.title}
                                                                     onBlur={() => this.setState({ taskRenameInputVisible: false })}
                                                                     onKeyDown={e => {
-                                                                        if (e.keyCode === 13 && e.target.value !== '') {
-                                                                            taskAction.renameTask(selected_task, e.target.value)
+                                                                        const target = e.target as HTMLInputElement;
+                                                                        if (e.keyCode === 13 && target.value !== '') {
+                                                                            taskAction.renameTask(selected_task, target.value)
                                                                             this.setState({ taskRenameInputVisible: false })
                                                                         }
                                                                     }}
@@ -867,7 +816,7 @@ class Main extends Component {
                                         </div>
                                         <div className='steps'>
                                             <div className='steps-inner'>
-                                                {selected_task.steps.slice().sort((a, b) => b.position - a.position).map((step, index) => (
+                                                {selected_task?.steps?.slice().sort((a, b) => b.position - a.position).map((step, index) => (
                                                     <div
                                                         key={index}
                                                         id={`step-${index}`}
@@ -911,13 +860,14 @@ class Main extends Component {
                                                     id="baseAddInput-addStep"
                                                     className="baseAdd-input chromeless"
                                                     type="text"
-                                                    maxLength="255"
+                                                    maxLength={255}
                                                     placeholder="下一步"
-                                                    tabIndex="-1"
+                                                    tabIndex={-1}
                                                     onKeyDown={e => {
-                                                        if (e.keyCode === 13 && e.target.value !== '') {
-                                                            taskAction.addTaskStep(selected_task, e.target.value)
-                                                            e.target.value = ''
+                                                        const target = e.target as HTMLInputElement;
+                                                        if (e.keyCode === 13 && target.value !== '') {
+                                                            taskAction.addTaskStep(selected_task, target.value)
+                                                            target.value = ''
                                                         }
                                                     }}
                                                 />
@@ -1040,12 +990,12 @@ class Main extends Component {
                                                             <div className='section-icon'>
                                                                 {
                                                                     selected_task.assignment ? (
-                                                                        <div className='avatar'>{users.find(u => u.user_id === selected_task.assignment.assignee)?.username.substring(0, 2)}</div>
+                                                                        <div className='avatar'>{users.find(u => u.user_id === selected_task?.assignment?.assignee)?.username.substring(0, 2)}</div>
                                                                     ) : <Icon type="user-add" />
                                                                 }
                                                             </div>
                                                             <div className='section-content'>
-                                                                <div className='section-title'>{selected_task.assignment && users.find(u => u.user_id === selected_task.assignment.assignee) ? users.find(u => u.user_id === selected_task.assignment.assignee)?.username : '分配给'}</div>
+                                                                <div className='section-title'>{selected_task.assignment && users.find(u => u.user_id === selected_task?.assignment?.assignee) ? users.find(u => u.user_id === selected_task.assignment?.assignee)?.username : '分配给'}</div>
                                                             </div>
                                                         </div>
                                                     </button>
@@ -1058,7 +1008,7 @@ class Main extends Component {
                                             </div>
                                         )}
                                         <div className='section'>
-                                            {selected_task.linkedEntities.map((file, index) => (
+                                            {selected_task?.linkedEntities?.map((file, index) => (
                                                 <a key={index} className="link section-item file-item" rel="noopener noreferrer" id="l-2auvz9rbfqt" href={documentTypes.includes(file.extension)?`https://view.officeapps.live.com/op/view.aspx?src=${file.weblink}`:file.weblink} target="_blank" download={file.display_name}>
                                                     <div className="thumbnail-wrapper">
                                                         <div className="thumbnail">{file.extension}</div>
@@ -1089,9 +1039,9 @@ class Main extends Component {
                                                                 id="fileAttach"
                                                                 className="inputFile"
                                                                 type="file"
-                                                                tabIndex="-1"
+                                                                tabIndex={-1}
                                                                 onChange={() => {
-                                                                    const file = document.getElementById('fileAttach').files[0]
+                                                                    const file = (document.getElementById('fileAttach') as HTMLInputElement)?.files?[0]
                                                                     if (file.size > 25 * 1024 * 1024) return message.error('上传文件大小不能超过25MB')
                                                                     taskAction.fileUpload(file, selected_task)
                                                                 }}
@@ -1118,8 +1068,8 @@ class Main extends Component {
                                                                     className="editableContent-textarea"
                                                                     draggable="false"
                                                                     placeholder={'添加备注'}
-                                                                    defaultValue={selected_task.note}
-                                                                    maxLength="-1"
+                                                                    defaultValue={selected_task.note || undefined}
+                                                                    maxLength={-1}
                                                                     style={{ resize: 'none', overflow: 'auto' }}
                                                                     autoFocus
                                                                     onBlur={() => this.setState({ noteInputVisible: false })}
@@ -1134,19 +1084,19 @@ class Main extends Component {
                                                     }
                                                     <div className='editableContent-footer'>
                                                         <div className='editableContent-lastEdited'>
-                                                            {selected_task.note && <span>{`已在 ${formatDate(selected_task.note_updated_at)} 更新`}</span>}
+                                                            {selected_task.note && <span>{`已在 ${formatDate(selected_task?.note_updated_at || '')} 更新`}</span>}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        {selected_list.sharing_status !== 'NotShare' && (
+                                        {((selected_task.comments?.length !== undefined && selected_task.comments.length > 0) || selected_list.sharing_status !== 'NotShare') && (
                                             <div className='section'>
                                                 <div className='chat-window'>
                                                     <div className='chat-header'>评论</div>
                                                     <div className='chat-area'>
                                                         {selected_task.comments?.map((c, i) => {
-                                                            if (c.user_id === user.user_id) {
+                                                            if (c.user_id === user?.user_id) {
                                                                 return (
                                                                     <div key={i} className='chat-message me'>
                                                                         <div className='chat-content'>{c.comment}</div>
@@ -1189,7 +1139,7 @@ class Main extends Component {
                                             <span className='date'>
                                                 {
                                                     selected_task.completed ? (
-                                                        `已由 ${users.find(user => user.user_id === selected_task.completed_by)?.username} 在 ${formatDate(selected_task.completed_at)} 完成`
+                                                        `已由 ${users.find(user => user.user_id === selected_task.completed_by)?.username} 在 ${formatDate(selected_task.completed_at || '')} 完成`
                                                     ) : (
                                                         `由 ${users.find(user => user.user_id === selected_task.created_by)?.username} 创建于 ${formatDate(selected_task.created_at)}`
                                                     )
@@ -1204,11 +1154,11 @@ class Main extends Component {
                             </div>
                         )
                     }
-                    <SettingDrawer/>
-                    <AccountDrawer/>
+                    {user && <SettingDrawer/>}
+                    {user && <AccountDrawer/>}
                 </div>
-                <ContextMenu setListRenameVisible={() => this.setState({ listRenameInputVisible: true })} listMenu_obj={selected_list} taskMenu_obj={selected_task || {}} />
-                <ShareModal selected_list={selected_list} selected_task={selected_task} />
+                {user && <ContextMenu setListRenameVisible={() => this.setState({ listRenameInputVisible: true })} listMenu_obj={selected_list} taskMenu_obj={selected_task || {}} />}
+                {user && users?.find(u => u.user_id === user.user_id) && selected_list.owner_id && <ShareModal selected_list={selected_list} selected_task={selected_task} />}   
                 <ListStatisticsModal selected_list={selected_list} />
             </div>
         )

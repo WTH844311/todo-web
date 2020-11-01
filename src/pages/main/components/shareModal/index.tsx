@@ -7,10 +7,7 @@ import { shareLink_prefix } from '../../../../common/config'
 
 const ShareModal = ({ selected_list, selected_task, data, state }) => {
     const { listAction, taskAction, users } = data
-    if (!selected_list.owner_id) return null
-    if (!localStorage.user) return null
-    const user_id = JSON.parse(localStorage.user).user_id
-    if (!users && !users.find(user => user.user_id === user_id)) return null
+    const user_id = data.user.user_id
     return (
         <>
             {/* 分配任务窗口 */}

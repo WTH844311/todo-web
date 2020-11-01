@@ -435,3 +435,8 @@
     font-weight: 700;
     color: #34373d;
 }
+
+.searchResults, .chunkedComponentList.sticky, .componentList.space-aside {
+    height: 100%;
+    overflow-y: auto;
+}

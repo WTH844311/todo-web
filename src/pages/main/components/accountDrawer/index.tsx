@@ -1,10 +1,11 @@
 import './index.css'
-import React from 'react'
+import React, { FC } from 'react'
 import { observer, inject } from 'mobx-react'
 import { withRouter } from 'react-router-dom'
 import { Drawer } from 'antd'
+import { DataType } from '../../../../stores/types'
 
-const logOut = (history, changeAccountDrawer, data) => {
+const logOut = (history: string[], changeAccountDrawer: any, data: DataType) => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     if (data.ws !== null) data.ws.close()
@@ -12,9 +13,8 @@ const logOut = (history, changeAccountDrawer, data) => {
     history.push('/user/login')
 }
 
-const AccountDrawer = ({ history, state, data }) => {
+const AccountDrawer: FC<any> = ({ history, state, data }) => {
     const { changeAccountDrawer, accountDrawerVisible } = state
-    if (!localStorage.user) return null
     const { username, email } = JSON.parse(localStorage.user)
     return (
         <Drawer

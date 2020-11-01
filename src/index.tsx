@@ -1,3 +1,5 @@
+import  "react-app-polyfill/ie11";
+import  "react-app-polyfill/stable";
 import 'antd/dist/antd.css'
 import './style/index.css'
 import './style/antd.css'

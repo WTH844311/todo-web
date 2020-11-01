@@ -10,8 +10,7 @@ class ContextMenuGroup extends React.Component {
         const { listAction, taskAction, lists } = data
         const week = ['日', '一', '二', '三', '四', '五', '六']
         if (!listMenu_obj && !taskMenu_obj) return null
-        if (!localStorage.user) return null
-        const user_id = JSON.parse(localStorage.user).user_id
+        const user_id = data.user.user_id
         return (
             <>
                 {/* ‘任务’ 清单菜单 */}

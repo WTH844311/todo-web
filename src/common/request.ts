@@ -1,9 +1,9 @@
-import axios from 'axios'
-import qs from 'qs'
-import * as sysConfig from './config'
+import axios from 'axios';
+import qs from 'qs';
+import * as sysConfig from './config';
 
-axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8'
-axios.defaults.headers.put['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8'
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
+axios.defaults.headers.put['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
 
 // 请求拦截器
 axios.interceptors.request.use(config => {

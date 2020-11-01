@@ -59,6 +59,9 @@ class EditAcco extends Component {
                 message.success('修改邮箱成功')
                 if (!this.password) {
                     this.setState({ loading: false })
+                    const user = JSON.parse(localStorage.user)
+                    user.email = this.email
+                    localStorage.user = JSON.stringify(user)
                     return this.props.history.go(-2)
                 }
             } else if (msg === 'Invalid captcha') {

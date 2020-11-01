@@ -1,4 +1,4 @@
-const arraysEqual = (a, b) => {
+export const arraysEqual = (a: any[], b: any[]) => {
     if (a === b) return true;
     if (a == null || b == null) return false;
     if (a.length !== b.length) return false;
@@ -14,7 +14,7 @@ const arraysEqual = (a, b) => {
     return true;
 }
 
-const formatDate = (date, ...ignore) => {
+export const formatDate = (date: string, ...ignore: any) => {
     let newDate = new Date(date)
     if (newDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0)) return '今天'
     if (newDate.setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000) return '明天'
@@ -29,9 +29,4 @@ const formatDate = (date, ...ignore) => {
         dateStr += `${['周日', '周一', '周二', '周三', '周四', '周五', '周六'][newDate.getDay()]}`
     }
     return dateStr
-}
-
-module.exports = {
-    arraysEqual,
-    formatDate
 }

@@ -62,7 +62,6 @@ class ListStaticsModal extends Component {
             <Modal
                 title={`${selected_list.title} 的统计详情`}
                 width={1000}
-                // height={800}
                 visible={state.listStatisticsModalVisible}
                 onCancel={state.changeListStatisticsModal}
                 footer={null}
@@ -74,10 +73,6 @@ class ListStaticsModal extends Component {
                             <div className='statistics-title'>创建日期</div>
                             <div className='statistics-content'>{moment(selected_list.created_at).format('YYYY-MM-DD hh:mm:ss')}</div>
                         </div>
-                        {/* <div className='statistics-item'>
-                            <div className='statistics-title'>清单持续时间</div>
-                            <div className='statistics-content'>{1}</div>
-                        </div> */}
                         <div className='statistics-item'>
                             <div className='statistics-title'>任务总数</div>
                             <div className='statistics-content'>{selected_list.tasks.length}</div>

@@ -1,8 +1,8 @@
 import './index.css'
-import React from 'react'
+import React, { useState } from 'react'
 import { observer, inject } from 'mobx-react'
 import { withRouter } from 'react-router-dom'
-import { Drawer, Button } from 'antd'
+import { Drawer, Button, Switch } from 'antd'
 
 const exportJSON = ({ lists, tasks }) => {
     const content = JSON.stringify({
@@ -39,7 +39,8 @@ const importJSON = data => {
 
 const SettingDrawer = ({ history, state, data }) => {
     const { changeSettingDrawer, settingDrawerVisible } = state
-    if (!localStorage.user) return null
+    const setting = JSON.parse(localStorage.setting)
+    const [sound, setSound] = useState(setting?.sound)
     return (
         <Drawer
             title="设置"
@@ -65,6 +66,18 @@ const SettingDrawer = ({ history, state, data }) => {
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: '15px' }}>
                     <span style={{ flex: 1 }}>导出清单和任务</span>
                     <Button type='primary' onClick={() => exportJSON(data)}>导出</Button>
+                </div>
+            </div>
+            <div className='setting-item'>
+                <div className='settingItem-header'>完成任务音效</div>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: '15px' }}>
+                    <span style={{ flex: 1 }}>{sound ? '打开':'关闭'}</span>
+                    <Switch defaultChecked={setting?.sound} onChange={isChecked => {
+                        const setting = JSON.parse(localStorage.setting)
+                        setting.sound = isChecked
+                        setSound(isChecked)
+                        localStorage.setting = JSON.stringify(setting)
+                    }}/>
                 </div>
             </div>
         </Drawer>

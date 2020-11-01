@@ -1,5 +1,9 @@
+.setting-item {
+    margin-bottom: 30px;
+}
+
 .setting-item .settingItem-header {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 1000;
     margin-bottom: 20px;
 }

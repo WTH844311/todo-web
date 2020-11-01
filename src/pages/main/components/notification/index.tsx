@@ -6,16 +6,17 @@ class Notification extends React.Component {
 
     finish = () => {
         const { task, setReminderList, reminderList } = this.props
-        let index
+        let index, arr = JSON.parse(JSON.stringify(reminderList))
         reminderList.map((v, i) => {
             if (v._id === task._id) return index = i
         })
-        reminderList.splice(index, 1)
-        setReminderList(reminderList)
+        arr.splice(index, 1)
+        setReminderList(arr)
     }
 
     render() {
         const { task, data } = this.props
+        const { sound } = JSON.parse(localStorage.setting)
         return (
             <div id="notifications">
                 <div className="notificationToast toast-transition-enter-done">
@@ -26,6 +27,7 @@ class Notification extends React.Component {
                             role="checkbox" 
                             tabIndex="0"
                             onClick={() => {
+                                if (!task.completed && sound) new Audio('/res/audio/done.wav').play()
                                 data.taskAction.changeTaskCompleted(task)
                                 this.finish()
                             }}
