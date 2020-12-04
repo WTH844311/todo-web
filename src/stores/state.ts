@@ -14,10 +14,10 @@ class State {
         this.settingDrawerVisible = !this.settingDrawerVisible
         this.accountDrawerVisible = false
         if (this.settingDrawerVisible) {
-            document.querySelector('.options-container').classList.add('visible')
-            document.querySelector('.avatar-container').classList.remove('visible')
+            document.querySelector('.options-container')?.classList.add('visible')
+            document.querySelector('.avatar-container')?.classList.remove('visible')
         } else {
-            document.querySelector('.options-container').classList.remove('visible')
+            document.querySelector('.options-container')?.classList.remove('visible')
         }
     }
 
@@ -25,10 +25,10 @@ class State {
         this.accountDrawerVisible = !this.accountDrawerVisible
         this.settingDrawerVisible = false
         if (this.accountDrawerVisible) {
-            document.querySelector('.avatar-container').classList.add('visible')
-            document.querySelector('.options-container').classList.remove('visible')
+            document.querySelector('.avatar-container')?.classList.add('visible')
+            document.querySelector('.options-container')?.classList.remove('visible')
         } else {
-            document.querySelector('.avatar-container').classList.remove('visible')
+            document.querySelector('.avatar-container')?.classList.remove('visible')
         }
     }
 

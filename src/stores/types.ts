@@ -45,6 +45,8 @@ export interface StateType {
     changeSettingDrawer: any;
     changeShareOptionModal: any;
     changeAssignmentModal: any;
+    changeListStatisticsModal: any;
+    changeShareAccessManagement: any;
 }
 
 export interface IStep {
@@ -120,7 +122,7 @@ export interface ITask {
     note_updated_at: string | null;
     linkedEntities: ILinkedEntitie[] | null;
     position: number;
-    today_position: number;
+    today_position: number | null;
     assignment?: IAssignment | null;
     comments?: IComment[];
 }
@@ -141,7 +143,7 @@ export interface IList {
     theme: string;
     position: number;
     members: string[];
-    
+
     // 默认清单独有属性
     defaultList: boolean;
     tasks?: ITask[];

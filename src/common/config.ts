@@ -1,8 +1,8 @@
 const firstRoute = ''
-const shareLink_prefix = "http://101.132.140.49:3000/#/"
-const domain = `http://101.132.140.49:3000/`
-const serverDomain = `http://101.132.140.49:3001/`
-const wsDomain = `ws://101.132.140.49:3002/`
+const shareLink_prefix = "http://localhost:3000/#/"
+const domain = `http://localhost:3000/`
+const serverDomain = `http://localhost:3001/`
+const wsDomain = `ws://localhost:3002/`
 
 const jwt = {
     exp: 60 * 60,
