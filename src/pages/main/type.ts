@@ -12,15 +12,11 @@ export type IMobxStore = RouteComponentProps<IRouteMatchParams> & {
 }
 
 export type IState = {
-  leftColumnEnter: boolean;
   listRenameInputVisible: boolean;
-  taskRenameInputVisible: boolean;
-  noteInputVisible: boolean;
   searchVisible: boolean;
   reminderList: ITask[];
   searchValue: string;
   searchData: ISearchData | null;
-  chatButtonDisabled: boolean;
 }
 
 interface ISearchData {

@@ -1,5 +1,5 @@
 /* 右边 */
-.app > .rightColumn {
+.rightColumn {
     box-sizing: border-box;
     background: #f4f4f4;
     display: flex;

@@ -221,7 +221,7 @@ const ContextMenuGroup: FC<any> = ({listMenu_obj, taskMenu_obj, data, state, set
         </div>
         <MenuItem divider/>
         {!listMenu_obj.defaultList && (
-          <MenuItem onClick={setListRenameVisible}>
+          <MenuItem onClick={() => dispatchEvent('changeListRenameInputVisible')}>
             <svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="15115" width="20"
                  height="20">
               <path

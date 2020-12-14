@@ -1,5 +1,5 @@
 /* 左边 */
-.app > .leftColumn {
+.leftColumn {
     border-right: 1px solid #eaeaea;
     background: #f4f4f4;
     transition: width 180ms ease;
