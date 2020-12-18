@@ -13,12 +13,7 @@ const Tasks: FC<any> = ({ state, data, list_index, selected_list, searchData, se
   const [listRenameInputVisible, setListRenameInputVisible] = useState(false)
 
   useEffect(() => {
-    const foo = state => setListRenameInputVisible(state)
-    addEventListener('changeListRenameInputVisible', foo)
 
-    return () => {
-      removeEventListener('changeListRenameInputVisible', foo)
-    }
   }, [])
 
   const {lists, users, listAction, taskAction} = data
